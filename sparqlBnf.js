@@ -118,12 +118,6 @@ $(function() {
             label
                 .style("font", "normal 11px Arial")
                 .style("fill", function(d) {
-                    d3.selectAll("input").select(function() {
-                        if (this.value == d.value) {
-                            //couleurs inputs (texte pour les arcs)
-                            this.style.color = color(d.value);
-                        }
-                    });
                     return color(d.value);
                 })
                 .attr("dy", "-5")
@@ -163,7 +157,7 @@ $(function() {
                     .on("drag", dragged)
                     .on("end", dragended));
 
-            //Title pour avoir l'id du noeud au survol
+            //Title pour avoir l'id du noeud au survol + click redir ressource
             node
                 .on("click", function(d) {
                     window.open(d.uri, "_blank");
