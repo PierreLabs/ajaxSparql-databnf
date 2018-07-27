@@ -164,7 +164,11 @@ $(function() {
                     .on("end", dragended));
 
             //Title pour avoir l'id du noeud au survol
-            node.append("title")
+            node
+                .on("click", function(d) {
+                    window.open(d.uri, "_blank");
+                })
+                .append("title")
                 .text(function(d) {
                     return d.id;
                 });
