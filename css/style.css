@@ -1,0 +1,12 @@
+body {
+    padding: 30px;
+    margin: 0;
+}
+
+#lesvg {
+    border: 1px solid #41517e;
+}
+
+.top-marge {
+    margin-top: 20px;
+}
