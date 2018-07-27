@@ -2,6 +2,7 @@
 $(function() {
 
     $('#btn').click(function() {
+        $(".card").css('display', 'none');
         var uri = $('#uri').val();
         sparqlData(uri);
     });
@@ -19,7 +20,7 @@ $(function() {
         //http://data.bnf.fr/ark:/12148/cb14793455w Giuliani
 
         var endpoint = "http://data.bnf.fr/sparql";
-        var req = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX foaf: <http://xmlns.com/foaf/0.1/> PREFIX dcterms: <http://purl.org/dc/terms/> SELECT DISTINCT ?work ?title ?nom WHERE {<" + uri + "> foaf:focus ?person ;<http://www.w3.org/2004/02/skos/core#prefLabel> ?nom . ?work dcterms:creator ?person; rdfs:label ?title .} LIMIT 100";
+        var req = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX foaf: <http://xmlns.com/foaf/0.1/> PREFIX dcterms: <http://purl.org/dc/terms/> SELECT DISTINCT ?work ?title ?nom ?resum (SAMPLE(?depic) as ?fdepic) WHERE {<" + uri + "> foaf:focus ?person; <http://www.w3.org/2004/02/skos/core#prefLabel> ?nom . ?work dcterms:creator ?person; rdfs:label ?title . OPTIONAL { ?person <http://rdvocab.info/ElementsGr2/biographicalInformation> ?resum.} OPTIONAL { ?person foaf:depiction ?depic. }} LIMIT 100";
 
         $.ajax({
             url: endpoint,
@@ -41,15 +42,22 @@ $(function() {
         }
 
         function graphResultat(oeuvres) {
+            console.log(oeuvres.results.bindings);
             $.each(oeuvres.results.bindings, function(i, oeuvre) {
                 if (i === 0) {
+                    //depiction auteur + abstract
+                    $("#depic").attr('src', oeuvre.fdepic.value);
+                    $(".card-title").html(oeuvre.nom.value);
+                    $(".card-text").html(oeuvre.resum.value);
+                    $(".card").css('display', 'block');
+
                     //nodes index 0 = auteur
                     nodes.push({ id: oeuvre.nom.value, uri: uri, group: "auteur" });
                     nodes.push({ id: oeuvre.title.value, uri: oeuvre.work.value, group: "oeuvre" });
                 } else {
                     nodes.push({ id: oeuvre.title.value, uri: oeuvre.work.value, group: "oeuvre" });
                 }
-                links.push({ target: oeuvre.nom.value, source: oeuvre.title.value, value: "Créateur" });
+                links.push({ source: oeuvre.nom.value, target: oeuvre.title.value, value: "Créateur" });
             });
             var newnodes = supprDoublons(nodes, "id"); //Tableau des noeuds uniques
             dataobj = {
@@ -86,7 +94,7 @@ $(function() {
                     return d.id;
                 }).distance(function(d) {
                     //évalue la longueur du lien en fonction de la longueur de chaine
-                    return d.value.length + 2 > 5 ? d.value.length * 10 : 50;
+                    return d.value.length * 20;
                 }))
                 .force("charge", d3.forceManyBody())
                 .force("center", d3.forceCenter(width / 2, height / 2));
