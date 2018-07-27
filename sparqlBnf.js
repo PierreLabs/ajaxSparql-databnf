@@ -1,8 +1,8 @@
 /*jshint esversion: 6 */
 $(function() {
 
-    var uri = document.getElementById("uri").value;
-    document.getElementById('btn').addEventListener("click", function() {
+    $('#btn').click(function() {
+        var uri = $('#uri').val();
         sparqlData(uri);
     });
 
@@ -15,8 +15,9 @@ $(function() {
         var links = []; //Les arcs
         var dataobj = {}; //Objet des tableaux noeuds/liens
 
-        //http://data.bnf.fr/ark:/12148/cb11907966z
+        //http://data.bnf.fr/ark:/12148/cb11907966z Hugo
         //http://data.bnf.fr/ark:/12148/cb14793455w Giuliani
+
         var endpoint = "http://data.bnf.fr/sparql";
         var req = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX foaf: <http://xmlns.com/foaf/0.1/> PREFIX dcterms: <http://purl.org/dc/terms/> SELECT DISTINCT ?work ?title ?nom WHERE {<" + uri + "> foaf:focus ?person ;<http://www.w3.org/2004/02/skos/core#prefLabel> ?nom . ?work dcterms:creator ?person; rdfs:label ?title .} LIMIT 100";
 
