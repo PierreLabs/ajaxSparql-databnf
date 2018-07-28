@@ -6,7 +6,11 @@ $(function() {
         var uri = $('#uri').val();
         sparqlData(uri);
     });
-
+    $('#uri').keydown(function(e) { //Appuie sur entrée => click
+        if (e.keyCode == 13) {
+            $('#btn').click();
+        }
+    });
 
 
 
@@ -18,9 +22,10 @@ $(function() {
 
         //http://data.bnf.fr/ark:/12148/cb11907966z Hugo
         //http://data.bnf.fr/ark:/12148/cb14793455w Giuliani
+        //http://data.bnf.fr/ark:/12148/cb118900414 Balzac
 
         var endpoint = "http://data.bnf.fr/sparql";
-        var req = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX foaf: <http://xmlns.com/foaf/0.1/> PREFIX dcterms: <http://purl.org/dc/terms/> SELECT DISTINCT ?work ?title ?nom ?resum (SAMPLE(?depic) as ?fdepic) WHERE {<" + uri + "> foaf:focus ?person; <http://www.w3.org/2004/02/skos/core#prefLabel> ?nom . ?work dcterms:creator ?person; rdfs:label ?title . OPTIONAL { ?person <http://rdvocab.info/ElementsGr2/biographicalInformation> ?resum.} OPTIONAL { ?person foaf:depiction ?depic. }} LIMIT 100";
+        var req = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX foaf: <http://xmlns.com/foaf/0.1/> PREFIX dcterms: <http://purl.org/dc/terms/> SELECT DISTINCT ?work ?title ?nom ?resum (SAMPLE(?depic) as ?fdepic) WHERE {<" + uri + "> foaf:focus ?person; <http://www.w3.org/2004/02/skos/core#prefLabel> ?nom . ?work dcterms:creator ?person; rdfs:label ?title . OPTIONAL { ?person <http://rdvocab.info/ElementsGr2/biographicalInformation> ?resum.} OPTIONAL { ?person foaf:depiction ?depic. }} ORDER BY RAND() LIMIT 100";
 
         $.ajax({
             url: endpoint,
@@ -89,14 +94,17 @@ $(function() {
             }
 
             //Mise en place des forces
+            var attractForce = d3.forceManyBody().strength(-500).distanceMin(25).distanceMax(200);
+            var collisionForce = d3.forceCollide(20).strength(1).iterations(64);
             var simulation = d3.forceSimulation()
                 .force("link", d3.forceLink().id(function(d) {
                     return d.id;
                 }).distance(function(d) {
                     //évalue la longueur du lien en fonction de la longueur de chaine
-                    return d.value.length * 20;
+                    return d.value.length * 10;
                 }))
-                .force("charge", d3.forceManyBody())
+                .force("attractForce", attractForce)
+                .force("collisionForce", collisionForce)
                 .force("center", d3.forceCenter(width / 2, height / 2));
 
             //liens

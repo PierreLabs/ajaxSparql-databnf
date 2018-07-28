@@ -16,18 +16,21 @@
 <body>
     <div class="container">
         <div class="row">
-            <svg id="lesvg" preserveAspectRatio="xMinYMin meet" width="50%" height="460"></svg>
-            <div class="card p-15" style="width: 14rem; display:none;">
-                <img id='depic' class="card-img-top" src="#" alt="Card image cap">
-                <div class="card-body">
-                    <h5 class="card-title">Lorem, ipsum.</h5>
-                    <p class="card-text">Lorem ipsum dolor, sit amet consectetur adipisicing elit. Fuga aliquam in alias earum odio hic?</p>
+            <div class="col-6">
+                <svg id="lesvg" class="border" preserveAspectRatio="xMinYMin meet" width="100%" height="500"></svg><br>
+                <input id="uri" class="top-marge" size="40" type="text" value='http://data.bnf.fr/ark:/12148/cb14793455w'>
+                <button id='btn' class='btn btn-primary'>envoi</button>
+            </div>
+            <div class="col-6">
+                <div class="card p-15" style="width: 17rem; display:none;">
+                    <img id='depic' class="card-img-top" src="#" alt="Card image cap">
+                    <div class="card-body">
+                        <h5 class="card-title">Lorem, ipsum.</h5>
+                        <p class="card-text">Lorem ipsum dolor, sit amet consectetur adipisicing elit. Fuga aliquam in alias earum odio hic?</p>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="row top-marge">
-            <input id="uri" size="40" type="text" value='http://data.bnf.fr/ark:/12148/cb14793455w'>
-            <button id='btn' class='btn btn-primary'>envoi</button></div>
     </div>
     <script src="js/sparqlBnf.js"></script>
 </body>
