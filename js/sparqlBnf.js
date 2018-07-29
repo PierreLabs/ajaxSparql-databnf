@@ -53,197 +53,201 @@ $(function() {
         }
 
         function graphResultat(oeuvres) {
-            console.log(oeuvres.results.bindings);
-            $.each(oeuvres.results.bindings, function(i, oeuvre) {
-                if (i === 0) {
-                    //depiction auteur + abstract
-                    $("#depic").attr('src', oeuvre.fdepic.value);
-                    $(".card-title").html(oeuvre.nom.value);
-                    $(".card-text").html(oeuvre.resum.value);
-                    $(".card").css('display', 'block');
+            if ((oeuvres.results.bindings.length)) {
+                d3.selectAll("#rowErr").classed("d-block", false);
+                $.each(oeuvres.results.bindings, function(i, oeuvre) {
+                    if (i === 0) {
+                        //depiction auteur + abstract
+                        $("#depic").attr('src', oeuvre.fdepic.value);
+                        $(".card-title").html(oeuvre.nom.value);
+                        $(".card-text").html(oeuvre.resum.value);
+                        $(".card").css('display', 'block');
 
-                    //nodes index 0 = auteur
-                    nodes.push({ id: oeuvre.nom.value, uri: uri, group: "auteur" });
-                    nodes.push({ id: oeuvre.titre.value, uri: oeuvre.oeuvre.value, group: "oeuvre" });
-                } else {
-                    nodes.push({ id: oeuvre.titre.value, uri: oeuvre.oeuvre.value, group: "oeuvre" });
+                        //nodes index 0 = auteur
+                        nodes.push({ id: oeuvre.nom.value, uri: uri, group: "auteur" });
+                        nodes.push({ id: oeuvre.titre.value, uri: oeuvre.oeuvre.value, group: "oeuvre" });
+                    } else {
+                        nodes.push({ id: oeuvre.titre.value, uri: oeuvre.oeuvre.value, group: "oeuvre" });
+                    }
+                    links.push({ source: oeuvre.nom.value, target: oeuvre.titre.value, value: "Créateur" });
+                });
+                var newnodes = supprDoublons(nodes, "id"); //Tableau des noeuds uniques
+                dataobj = {
+                    nodes: newnodes,
+                    links: links
+                };
+
+                //Init D3
+                d3.selectAll("svg > *").remove();
+
+                var svg = d3.select("svg"),
+                    width = $("#lesvg").width(), //+svg.attr("width"),
+                    height = $("#lesvg").height(); //+svg.attr("height");
+
+                var tabcouleurs = ["#3366cc", "#dc3912", "#ff9900", "#109618", "#990099", "#0099c6", "#dd4477", "#66aa00", "#b82e2e", "#316395", "#994499", "#22aa99", "#aaaa11", "#6633cc", "#e67300", "#8b0707", "#651067", "#329262", "#5574a6", "#3b3eac"];
+                var color = d3.scaleOrdinal(tabcouleurs); //d3.schemeCategory10
+
+                var g = svg.append("g");
+
+                //Zoom
+                var zoom = d3.zoom()
+                    .scaleExtent([0.8 / 2, 4])
+                    .on("zoom", zoomed);
+
+                svg.call(zoom);
+
+                function zoomed() {
+                    g.attr("transform", d3.event.transform);
                 }
-                links.push({ source: oeuvre.nom.value, target: oeuvre.titre.value, value: "Créateur" });
-            });
-            var newnodes = supprDoublons(nodes, "id"); //Tableau des noeuds uniques
-            dataobj = {
-                nodes: newnodes,
-                links: links
-            };
 
-            //Init D3
-            d3.selectAll("svg > *").remove();
+                //Mise en place des forces
+                var attractForce = d3.forceManyBody().strength(-500).distanceMin(25).distanceMax(200);
+                var collisionForce = d3.forceCollide(20).strength(1).iterations(64);
+                var simulation = d3.forceSimulation()
+                    .force("link", d3.forceLink().id(function(d) {
+                        return d.id;
+                    }).distance(function(d) {
+                        //évalue la longueur du lien en fonction de la longueur de chaine
+                        return d.value.length * 10;
+                    }))
+                    .force("attractForce", attractForce)
+                    .force("collisionForce", collisionForce)
+                    .force("center", d3.forceCenter(width / 2, height / 2));
 
-            var svg = d3.select("svg"),
-                width = $("#lesvg").width(), //+svg.attr("width"),
-                height = $("#lesvg").height(); //+svg.attr("height");
+                //liens
+                var link = g
+                    .attr("class", "links")
+                    .selectAll("line")
+                    .data(dataobj.links)
+                    .enter().append("line")
+                    .attr("stroke-width", 1)
+                    .attr("stroke", function(d) { return color(d.value); });
 
-            var tabcouleurs = ["#3366cc", "#dc3912", "#ff9900", "#109618", "#990099", "#0099c6", "#dd4477", "#66aa00", "#b82e2e", "#316395", "#994499", "#22aa99", "#aaaa11", "#6633cc", "#e67300", "#8b0707", "#651067", "#329262", "#5574a6", "#3b3eac"];
-            var color = d3.scaleOrdinal(tabcouleurs); //d3.schemeCategory10
-
-            var g = svg.append("g");
-
-            //Zoom
-            var zoom = d3.zoom()
-                .scaleExtent([0.8 / 2, 4])
-                .on("zoom", zoomed);
-
-            svg.call(zoom);
-
-            function zoomed() {
-                g.attr("transform", d3.event.transform);
-            }
-
-            //Mise en place des forces
-            var attractForce = d3.forceManyBody().strength(-500).distanceMin(25).distanceMax(200);
-            var collisionForce = d3.forceCollide(20).strength(1).iterations(64);
-            var simulation = d3.forceSimulation()
-                .force("link", d3.forceLink().id(function(d) {
-                    return d.id;
-                }).distance(function(d) {
-                    //évalue la longueur du lien en fonction de la longueur de chaine
-                    return d.value.length * 10;
-                }))
-                .force("attractForce", attractForce)
-                .force("collisionForce", collisionForce)
-                .force("center", d3.forceCenter(width / 2, height / 2));
-
-            //liens
-            var link = g
-                .attr("class", "links")
-                .selectAll("line")
-                .data(dataobj.links)
-                .enter().append("line")
-                .attr("stroke-width", 1)
-                .attr("stroke", function(d) { return color(d.value); });
-
-            //Chemins labels
-            var pathT = g.selectAll(".links")
-                .data(dataobj.links)
-                .enter().append("path")
-                .attr("class", "pathT")
-                .attr("id",
-                    function(d) {
-                        return "path" + d.source + "_" + d.target;
-                    });
-
-            //Labels
-            var label = g.selectAll("text")
-                .data(dataobj.links)
-                .enter().append("text");
-
-            label
-                .style("font", "normal 11px Arial")
-                .style("fill", function(d) {
-                    return color(d.value);
-                })
-                .attr("dy", "-5")
-                .attr("dx", "13")
-                .style('text-anchor', 'start')
-                .attr("fill-opacity", 0.75);
-
-            label.append("textPath")
-                .attr("xlink:href",
-                    function(d) {
-                        return "#path" + d.source + "_" + d.target;
-                    })
-                .text(function(d) {
-                    return d.value + " >";
-                });
-
-            function moveto(d) {
-                return "M" + d.target.x + "," + d.target.y;
-            }
-
-            function lineto(d) {
-                return "L" + d.source.x + "," + d.source.y;
-            }
-
-            //Noeuds
-            var node = g
-                .attr("class", "nodes")
-                .selectAll("circle")
-                .data(dataobj.nodes)
-                .enter().append("circle")
-                .attr("r", function(d) { return d.group == "auteur" ? 30 : 10; })
-                .attr("fill", function(d) {
-                    return color(d.id);
-                })
-                .call(d3.drag()
-                    .on("start", dragstarted)
-                    .on("drag", dragged)
-                    .on("end", dragended));
-
-            //Title pour avoir l'id du noeud au survol + click redir ressource
-            node
-                .on("click", function(d) {
-                    window.open(d.uri, "_blank");
-                })
-                .append("title")
-                .text(function(d) {
-                    return d.id;
-                });
-
-            simulation
-                .nodes(dataobj.nodes)
-                .on("tick", ticked);
-
-            simulation.force("link")
-                .links(dataobj.links);
-
-            //Fonction itération d3
-            function ticked() {
-                link
-                    .attr("x1", function(d) {
-                        return d.source.x;
-                    })
-                    .attr("y1", function(d) {
-                        return d.source.y;
-                    })
-                    .attr("x2", function(d) {
-                        return d.target.x;
-                    })
-                    .attr("y2", function(d) {
-                        return d.target.y;
-                    });
-
-                node
-                    .attr("cx", function(d) {
-                        return d.x;
-                    })
-                    .attr("cy", function(d) {
-                        return d.y;
-                    });
-
-                pathT
-                    .attr("d",
+                //Chemins labels
+                var pathT = g.selectAll(".links")
+                    .data(dataobj.links)
+                    .enter().append("path")
+                    .attr("class", "pathT")
+                    .attr("id",
                         function(d) {
-                            return moveto(d) + lineto(d);
+                            return "path" + d.source + "_" + d.target;
                         });
-            }
 
-            function dragstarted(d) {
-                if (!d3.event.active) simulation.alphaTarget(0.3).restart();
-                d.fx = d.x;
-                d.fy = d.y;
-            }
+                //Labels
+                var label = g.selectAll("text")
+                    .data(dataobj.links)
+                    .enter().append("text");
 
-            function dragged(d) {
-                d.fx = d3.event.x;
-                d.fy = d3.event.y;
-            }
+                label
+                    .style("font", "normal 11px Arial")
+                    .style("fill", function(d) {
+                        return color(d.value);
+                    })
+                    .attr("dy", "-5")
+                    .attr("dx", "13")
+                    .style('text-anchor', 'start')
+                    .attr("fill-opacity", 0.75);
 
-            function dragended(d) {
-                if (!d3.event.active) simulation.alphaTarget(0);
-                d.fx = null;
-                d.fy = null;
-            }
+                label.append("textPath")
+                    .attr("xlink:href",
+                        function(d) {
+                            return "#path" + d.source + "_" + d.target;
+                        })
+                    .text(function(d) {
+                        return d.value + " >";
+                    });
 
+                function moveto(d) {
+                    return "M" + d.target.x + "," + d.target.y;
+                }
+
+                function lineto(d) {
+                    return "L" + d.source.x + "," + d.source.y;
+                }
+
+                //Noeuds
+                var node = g
+                    .attr("class", "nodes")
+                    .selectAll("circle")
+                    .data(dataobj.nodes)
+                    .enter().append("circle")
+                    .attr("r", function(d) { return d.group == "auteur" ? 30 : 10; })
+                    .attr("fill", function(d) {
+                        return color(d.id);
+                    })
+                    .call(d3.drag()
+                        .on("start", dragstarted)
+                        .on("drag", dragged)
+                        .on("end", dragended));
+
+                //Title pour avoir l'id du noeud au survol + click redir ressource
+                node
+                    .on("click", function(d) {
+                        window.open(d.uri, "_blank");
+                    })
+                    .append("title")
+                    .text(function(d) {
+                        return d.id;
+                    });
+
+                simulation
+                    .nodes(dataobj.nodes)
+                    .on("tick", ticked);
+
+                simulation.force("link")
+                    .links(dataobj.links);
+
+                //Fonction itération d3
+                function ticked() {
+                    link
+                        .attr("x1", function(d) {
+                            return d.source.x;
+                        })
+                        .attr("y1", function(d) {
+                            return d.source.y;
+                        })
+                        .attr("x2", function(d) {
+                            return d.target.x;
+                        })
+                        .attr("y2", function(d) {
+                            return d.target.y;
+                        });
+
+                    node
+                        .attr("cx", function(d) {
+                            return d.x;
+                        })
+                        .attr("cy", function(d) {
+                            return d.y;
+                        });
+
+                    pathT
+                        .attr("d",
+                            function(d) {
+                                return moveto(d) + lineto(d);
+                            });
+                }
+
+                function dragstarted(d) {
+                    if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+                    d.fx = d.x;
+                    d.fy = d.y;
+                }
+
+                function dragged(d) {
+                    d.fx = d3.event.x;
+                    d.fy = d3.event.y;
+                }
+
+                function dragended(d) {
+                    if (!d3.event.active) simulation.alphaTarget(0);
+                    d.fx = null;
+                    d.fy = null;
+                }
+
+            } else {
+                d3.selectAll("#rowErr").classed("d-block", true);
+            }
         }
     }
 
