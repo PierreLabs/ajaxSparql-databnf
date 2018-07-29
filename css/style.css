@@ -6,3 +6,12 @@ body {
 .top-marge {
     margin-top: 20px;
 }
+
+.card {
+    transition: opacity 1s;
+}
+
+#rowErr {
+    opacity: 0;
+    transition: opacity 1s;
+}

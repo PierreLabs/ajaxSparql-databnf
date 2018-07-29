@@ -2,7 +2,9 @@
 $(function() {
 
     $('#btn').click(function() {
-        $(".card").css('display', 'none');
+        $(".card").css('opacity', '0');
+        $("#rowErr").css("opacity", "0");
+        d3.selectAll("svg > *").remove();
         var uri = $('#uri').val();
         sparqlData(uri);
     });
@@ -53,15 +55,15 @@ $(function() {
         }
 
         function graphResultat(oeuvres) {
-            if ((oeuvres.results.bindings.length)) {
-                d3.selectAll("#rowErr").classed("d-block", false);
+
+            if ((oeuvres.results.bindings.length)) { //S'il y a des résultats
                 $.each(oeuvres.results.bindings, function(i, oeuvre) {
                     if (i === 0) {
                         //depiction auteur + abstract
                         $("#depic").attr('src', oeuvre.fdepic.value);
                         $(".card-title").html(oeuvre.nom.value);
                         $(".card-text").html(oeuvre.resum.value);
-                        $(".card").css('display', 'block');
+                        $(".card").css('opacity', '1');
 
                         //nodes index 0 = auteur
                         nodes.push({ id: oeuvre.nom.value, uri: uri, group: "auteur" });
@@ -78,7 +80,6 @@ $(function() {
                 };
 
                 //Init D3
-                d3.selectAll("svg > *").remove();
 
                 var svg = d3.select("svg"),
                     width = $("#lesvg").width(), //+svg.attr("width"),
@@ -185,8 +186,8 @@ $(function() {
                 simulation.force("link")
                     .links(dataobj.links);
 
-            } else {
-                d3.selectAll("#rowErr").classed("d-block", true);
+            } else { //S'il n'y a pas de résultats
+                $("#rowErr").css("opacity", "1");
             }
 
             function zoomed() {
