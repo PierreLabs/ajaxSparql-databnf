@@ -96,10 +96,6 @@ $(function() {
 
                 svg.call(zoom);
 
-                function zoomed() {
-                    g.attr("transform", d3.event.transform);
-                }
-
                 //Mise en place des forces
                 var attractForce = d3.forceManyBody().strength(-500).distanceMin(25).distanceMax(200);
                 var collisionForce = d3.forceCollide(20).strength(1).iterations(64);
@@ -157,14 +153,6 @@ $(function() {
                         return d.value + " >";
                     });
 
-                function moveto(d) {
-                    return "M" + d.target.x + "," + d.target.y;
-                }
-
-                function lineto(d) {
-                    return "L" + d.source.x + "," + d.source.y;
-                }
-
                 //Noeuds
                 var node = g
                     .attr("class", "nodes")
@@ -197,56 +185,68 @@ $(function() {
                 simulation.force("link")
                     .links(dataobj.links);
 
-                //Fonction itération d3
-                function ticked() {
-                    link
-                        .attr("x1", function(d) {
-                            return d.source.x;
-                        })
-                        .attr("y1", function(d) {
-                            return d.source.y;
-                        })
-                        .attr("x2", function(d) {
-                            return d.target.x;
-                        })
-                        .attr("y2", function(d) {
-                            return d.target.y;
-                        });
-
-                    node
-                        .attr("cx", function(d) {
-                            return d.x;
-                        })
-                        .attr("cy", function(d) {
-                            return d.y;
-                        });
-
-                    pathT
-                        .attr("d",
-                            function(d) {
-                                return moveto(d) + lineto(d);
-                            });
-                }
-
-                function dragstarted(d) {
-                    if (!d3.event.active) simulation.alphaTarget(0.3).restart();
-                    d.fx = d.x;
-                    d.fy = d.y;
-                }
-
-                function dragged(d) {
-                    d.fx = d3.event.x;
-                    d.fy = d3.event.y;
-                }
-
-                function dragended(d) {
-                    if (!d3.event.active) simulation.alphaTarget(0);
-                    d.fx = null;
-                    d.fy = null;
-                }
-
             } else {
                 d3.selectAll("#rowErr").classed("d-block", true);
+            }
+
+            function zoomed() {
+                g.attr("transform", d3.event.transform);
+            }
+
+            function moveto(d) {
+                return "M" + d.target.x + "," + d.target.y;
+            }
+
+            function lineto(d) {
+                return "L" + d.source.x + "," + d.source.y;
+            }
+
+            //Fonction itération d3
+            function ticked() {
+                link
+                    .attr("x1", function(d) {
+                        return d.source.x;
+                    })
+                    .attr("y1", function(d) {
+                        return d.source.y;
+                    })
+                    .attr("x2", function(d) {
+                        return d.target.x;
+                    })
+                    .attr("y2", function(d) {
+                        return d.target.y;
+                    });
+
+                node
+                    .attr("cx", function(d) {
+                        return d.x;
+                    })
+                    .attr("cy", function(d) {
+                        return d.y;
+                    });
+
+                pathT
+                    .attr("d",
+                        function(d) {
+                            return moveto(d) + lineto(d);
+                        });
+            }
+
+            function dragstarted(d) {
+                if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+
+            function dragged(d) {
+                d.fx = d3.event.x;
+                d.fy = d3.event.y;
+            }
+
+            function dragended(d) {
+                if (!d3.event.active) simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
             }
         }
     }
