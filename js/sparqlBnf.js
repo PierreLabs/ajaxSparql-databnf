@@ -93,12 +93,12 @@ $(function() {
                     nodes: newnodes,
                     links: links
                 };
-                $.each(dataObj.nodes, function(i, e) {
-                    if (i > 0) {
-                        $("#dOeuvres").append("<div class='card card-oeuvre ml-1'><img class='card-img-top' src='" + e.depic + "' alt='illustration oeuvre'><div class='card-body'><h5 class='card-title'>" + e.id + "</h5><p class='card-text'>Une oeuvre de " + dataObj.nodes[0].id + "</p><a href='" + e.uri + "' target='_blank' class='btn btn-sm btn-secondary'>Accéder à la ressource</a></div></div>");
-                    }
-                });
-                $(".card-oeuvre").wrapAll("<div class='card-columns'></div>");
+                // $.each(dataObj.nodes, function(i, e) {
+                //     if (i > 0) {
+                //         $("#dOeuvres").append("<div class='card card-oeuvre ml-1' style='width: 5rem;'><img class='card-img-top' src='" + e.depic + "' alt='illustration oeuvre'><div class='card-body'><h5 class='card-title'>" + e.id + "</h5><p class='card-text'>Une oeuvre de " + dataObj.nodes[0].id + "</p><a href='" + e.uri + "' target='_blank' class='btn btn-sm btn-secondary'>Accéder à la ressource</a></div></div>");
+                //     }
+                // });
+                // $(".card-oeuvre").wrapAll("<div class='card-columns'></div>");
 
                 //Init D3
 
