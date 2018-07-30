@@ -57,6 +57,7 @@ $(function() {
         function graphResultat(oeuvres) {
 
             if ((oeuvres.results.bindings.length)) { //S'il y a des résultats
+                $("#rowErr").remove();
                 $.each(oeuvres.results.bindings, function(i, oeuvre) {
                     if (i === 0) {
                         //depiction auteur + abstract
@@ -187,6 +188,7 @@ $(function() {
                     .links(dataobj.links);
 
             } else { //S'il n'y a pas de résultats
+                $("#btn").after("<div id='rowErr' class='alert alert-danger col-6 top-marge' role='alert'>Aucun résultat...</div>");
                 $("#rowErr").css("opacity", "1");
             }
 
