@@ -11,10 +11,15 @@ body {
     transition: opacity 1s;
 }
 
+.card-img-top {
+    height: 220px;
+    object-fit: cover;
+}
 
-/* .card-columns {
-    column-count: 4;
-} */
+.scroll {
+    max-height: 560px;
+    overflow-y: auto;
+}
 
 #rowErr {
     opacity: 0;
