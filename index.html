@@ -16,16 +16,16 @@
 <body>
     <div class="container">
         <div class="row">
-            <div class="col-md-8">
+            <div class="col-sm-8">
                 <svg id="lesvg" class="border" preserveAspectRatio="xMinYMin meet" width="100%" height="500"></svg><br>
                 <div class="form">
                     <div class="form-group">
                         <input id="uri" class="mt-1 form-control" type="text" value='http://data.bnf.fr/ark:/12148/cb11928016k'>
-                        <button id='btn' class='btn btn-primary form-control'>Envoyer la requête</button></div>
+                        <button id='btn' class='btn btn-secondary btn-sm form-control'>Envoyer la requête</button></div>
                 </div>
             </div>
-            <div class="col-md-4 mt-1">
-                <div class="card p-15" style="width: 17rem; opacity:0;">
+            <div class="col-sm-4 mt-1">
+                <div id="cardAuteur" class="card p-1 text-white" style="width: 17rem; opacity:0;">
                     <img id='depic' class="card-img-top" src="#" alt="Card image cap">
                     <div class="card-body">
                         <h3 class="card-title">Lorem, ipsum.</h3>
@@ -35,9 +35,7 @@
             </div>
         </div>
     </div>
-    <div class="container">
-        <div id="dOeuvres" class="col-md-8"></div>
-    </div>
+    <div id="dOeuvres" class="container"></div>
     <script src="js/sparqlBnf.js"></script>
 </body>
 

@@ -11,11 +11,12 @@ body {
     transition: opacity 1s;
 }
 
+
+/* .card-columns {
+    column-count: 4;
+} */
+
 #rowErr {
     opacity: 0;
     transition: opacity 1s;
-}
-
-.card-oeuvre {
-    border: 1px solid darkgray;
 }

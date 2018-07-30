@@ -93,18 +93,22 @@ $(function() {
                     nodes: newnodes,
                     links: links
                 };
-                // $.each(dataObj.nodes, function(i, e) {
-                //     if (i > 0) {
-                //         $("#dOeuvres").append("<div class='card card-oeuvre ml-1' style='width: 5rem;'><img class='card-img-top' src='" + e.depic + "' alt='illustration oeuvre'><div class='card-body'><h5 class='card-title'>" + e.id + "</h5><p class='card-text'>Une oeuvre de " + dataObj.nodes[0].id + "</p><a href='" + e.uri + "' target='_blank' class='btn btn-sm btn-secondary'>Accéder à la ressource</a></div></div>");
-                //     }
-                // });
-                // $(".card-oeuvre").wrapAll("<div class='card-columns'></div>");
-
-                //Init D3
 
                 var tabcouleurs = ["#3366cc", "#dc3912", "#ff9900", "#109618", "#990099", "#0099c6", "#dd4477", "#66aa00", "#b82e2e", "#316395", "#994499", "#22aa99", "#aaaa11", "#6633cc", "#e67300", "#8b0707", "#651067", "#329262", "#5574a6", "#3b3eac"];
                 var color = d3.scaleOrdinal(tabcouleurs); //d3.schemeCategory10
 
+
+                //Ajout de "cards bootstrap" pour une visualisation sous forme de liste plus traditionnelle
+                $.each(dataObj.nodes, function(i, e) { // Itération sur les noeuds
+                    if (i > 0) { //Si pas l'auteur
+                        $("#dOeuvres").append("<div class='card card-oeuvre d-inline-block text-white' style='background-color: " + color(e.id) + ";'><img class='card-img-top' src='" + e.depic + "' alt='illustration oeuvre'><div class='card-body'><h5 class='card-title'>" + e.id + "</h5><p class='card-text'>Une oeuvre de " + dataObj.nodes[0].id + "</p><a href='" + e.uri + "' target='_blank' class='btn btn-secondary btn-sm'>Accéder</a></div></div>");
+                    } else if (i === 0) { //Si auteur
+                        $("#cardAuteur").css("background-color", color(e.id));
+                    }
+                });
+                $(".card-oeuvre").wrapAll("<div class='card-columns d-inline-block'></div>");
+
+                //Init D3
                 var g = svg.append("g");
 
                 //Zoom
