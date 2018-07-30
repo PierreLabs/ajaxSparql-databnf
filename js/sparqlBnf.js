@@ -34,7 +34,7 @@ $(function() {
 
         var nodes = []; //Les noeuds
         var links = []; //Les arcs
-        var dataobj = {}; //Objet des tableaux noeuds/liens
+        var dataObj = {}; //Objet des tableaux noeuds/liens
 
         //http://data.bnf.fr/ark:/12148/cb11907966z Hugo
         //http://data.bnf.fr/ark:/12148/cb14793455w Giuliani
@@ -46,7 +46,7 @@ $(function() {
         //note: <http://rdvocab.info/ElementsGr2/> est obsolète (FRAD) mais toujours utilisé dans le modèle de données de data.bnf.fr
         var prefixes = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX foaf: <http://xmlns.com/foaf/0.1/> PREFIX dcterms: <http://purl.org/dc/terms/> PREFIX frad: <http://rdvocab.info/ElementsGr2/>";
         //Requête SPARQL
-        var req = prefixes + " SELECT DISTINCT ?oeuvre ?titre ?nom ?resum (SAMPLE(?depic) as ?fdepic) WHERE {<" + uri + "> foaf:focus ?person; skos:prefLabel ?nom . ?oeuvre dcterms:creator ?person; rdfs:label ?titre . OPTIONAL { ?person frad:biographicalInformation ?resum.} OPTIONAL { ?person foaf:depiction ?depic. }} ORDER BY RAND() LIMIT 100";
+        var req = prefixes + " SELECT DISTINCT ?oeuvre ?titre ?nom ?resum (SAMPLE(?depic) as ?fdepic) (SAMPLE(?wDepic) as ?wdepic) WHERE {<" + uri + "> foaf:focus ?person; skos:prefLabel ?nom . ?oeuvre dcterms:creator ?person; rdfs:label ?titre . OPTIONAL { ?oeuvre foaf:depiction ?wDepic. } OPTIONAL { ?person frad:biographicalInformation ?resum.} OPTIONAL { ?person foaf:depiction ?depic. }} ORDER BY RAND() LIMIT 100";
 
         //Envoi de la requête (asynchrone avec promesse)
         $.ajax({
@@ -81,18 +81,24 @@ $(function() {
                         $(".card").css('opacity', '1');
 
                         //nodes index 0 = auteur
-                        nodes.push({ id: oeuvre.nom.value, uri: uri, group: "auteur" });
-                        nodes.push({ id: oeuvre.titre.value, uri: oeuvre.oeuvre.value, group: "oeuvre" });
+                        nodes.push({ id: oeuvre.nom.value, depic: oeuvre.fdepic.value, uri: uri, group: "auteur" });
+                        nodes.push({ id: oeuvre.titre.value, depic: typeof oeuvre.wdepic !== "undefined" ? oeuvre.wdepic.value : "/img/oeuvre.png", uri: oeuvre.oeuvre.value, group: "oeuvre" });
                     } else {
-                        nodes.push({ id: oeuvre.titre.value, uri: oeuvre.oeuvre.value, group: "oeuvre" });
+                        nodes.push({ id: oeuvre.titre.value, depic: typeof oeuvre.wdepic !== "undefined" ? oeuvre.wdepic.value : "/img/oeuvre.png", uri: oeuvre.oeuvre.value, group: "oeuvre" });
                     }
                     links.push({ source: oeuvre.nom.value, target: oeuvre.titre.value, value: "Créateur" });
                 });
                 var newnodes = supprDoublons(nodes, "id"); //Tableau des noeuds uniques
-                dataobj = {
+                dataObj = {
                     nodes: newnodes,
                     links: links
                 };
+                $.each(dataObj.nodes, function(i, e) {
+                    if (i > 0) {
+                        $("#dOeuvres").append("<div class='card card-oeuvre ml-1'><img class='card-img-top' src='" + e.depic + "' alt='illustration oeuvre'><div class='card-body'><h5 class='card-title'>" + e.id + "</h5><p class='card-text'>Une oeuvre de " + dataObj.nodes[0].id + "</p><a href='" + e.uri + "' target='_blank' class='btn btn-sm btn-secondary'>Accéder à la ressource</a></div></div>");
+                    }
+                });
+                $(".card-oeuvre").wrapAll("<div class='card-columns'></div>");
 
                 //Init D3
 
@@ -126,14 +132,14 @@ $(function() {
                 var link = g
                     .attr("class", "links")
                     .selectAll("line")
-                    .data(dataobj.links)
+                    .data(dataObj.links)
                     .enter().append("line")
                     .attr("stroke-width", 1)
                     .attr("stroke", function(d) { return color(d.value); });
 
                 //Chemins labels
                 var pathT = g.selectAll(".links")
-                    .data(dataobj.links)
+                    .data(dataObj.links)
                     .enter().append("path")
                     .attr("class", "pathT")
                     .attr("id",
@@ -143,7 +149,7 @@ $(function() {
 
                 //Labels
                 var label = g.selectAll("text")
-                    .data(dataobj.links)
+                    .data(dataObj.links)
                     .enter().append("text");
 
                 label
@@ -169,7 +175,7 @@ $(function() {
                 var node = g
                     .attr("class", "nodes")
                     .selectAll("circle")
-                    .data(dataobj.nodes)
+                    .data(dataObj.nodes)
                     .enter().append("circle")
                     .attr("r", function(d) { return d.group == "auteur" ? 30 : 10; })
                     .attr("fill", function(d) {
@@ -191,11 +197,11 @@ $(function() {
                     });
 
                 simulation
-                    .nodes(dataobj.nodes)
+                    .nodes(dataObj.nodes)
                     .on("tick", ticked);
 
                 simulation.force("link")
-                    .links(dataobj.links);
+                    .links(dataObj.links);
 
             } else { //S'il n'y a pas de résultats
                 $("#btn").after("<div id='rowErr' class='alert alert-danger col-6 top-marge' role='alert'>Aucun résultat...</div>");
