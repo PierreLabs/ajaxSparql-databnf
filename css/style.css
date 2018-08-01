@@ -9,12 +9,10 @@ body {
     color: #FFFFFF;
 }
 
-.btn {
-    vertical-align: baseline !important;
-}
-
 #btnData {
     font-size: 2.5rem;
+    padding-bottom: 14px !important;
+    vertical-align: baseline !important;
 }
 
 #copyDiv {
