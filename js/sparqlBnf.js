@@ -102,7 +102,7 @@ $(function() {
                 //Ajout de "cards bootstrap" pour une visualisation sous forme de liste plus traditionnelle
                 $.each(dataObj.nodes, function(i, e) { // Itération sur les noeuds
                     if (i > 0) { //Si pas l'auteur
-                        $("#dOeuvres").append("<div class='card card-oeuvre d-inline-block text-white' style='max-width:220px; background-color: " + color(e.id) + ";'><img class='card-img-top img-rounded' src='" + e.depic + "' alt='illustration oeuvre'><div class='card-body'><h5 class='card-title'>" + e.id + "</h5><p class='card-text'>Une oeuvre de " + dataObj.nodes[0].id + "</p><a href='" + e.uri + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Accéder à la ressource</a></div></div>");
+                        $("#dOeuvres").append("<div class='card card-oeuvre d-inline-block text-white' style='max-width:225px; background-color: " + color(e.id) + ";'><img class='card-img-top img-rounded' src='" + e.depic + "' alt='illustration oeuvre'><div class='card-body'><h5 class='card-title'>" + e.id + "</h5><p class='card-text'>Une oeuvre de " + dataObj.nodes[0].id + "</p><a href='" + e.uri + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Accéder à la ressource</a></div></div>");
                     } else if (i === 0) { //Si auteur
                         $("#cardAuteur").css("background-color", color(e.id));
                     }
