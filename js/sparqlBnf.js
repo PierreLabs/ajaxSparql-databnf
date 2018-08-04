@@ -49,25 +49,35 @@ $(function() {
         //Requête SPARQL
         var req = "SELECT DISTINCT ?oeuvre ?titre ?nom ?resum (SAMPLE(?depic) as ?fdepic) (SAMPLE(?wDepic) as ?wdepic) WHERE {<" + uri + "> foaf:focus ?person; skos:prefLabel ?nom . ?oeuvre dcterms:creator ?person; rdfs:label ?titre . OPTIONAL { ?oeuvre foaf:depiction ?wDepic. } OPTIONAL { ?person frad:biographicalInformation ?resum.} OPTIONAL { ?person foaf:depiction ?depic. }} ORDER BY RAND() LIMIT 100";
 
+        //méthode fetch => ajout de {output: 'json'} dans la requête 
         //Envoi de la requête (asynchrone avec promesse)
-        $.ajax({
-            url: endpoint,
-            dataType: 'json',
-            data: {
-                queryLn: 'SPARQL',
-                query: prefixes + req,
-                limit: 'none',
-                infer: 'true',
-                Accept: 'application/sparql-results+json'
-            },
-            success: graphResultat,
-            error: displayError
-        });
+        var url = new URL("http://data.bnf.fr/sparql"),
+            params = { queryLn: 'SPARQL', output: 'json', query: prefixes + req, limit: 'none', infer: 'true', Accept: 'application/sparql-results+json' };
+        Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+        fetch(url)
+            .then(reponse => reponse.json())
+            .then(data => graphResultat(data))
+            .catch(err => console.log(err));
 
-        function displayError(xhr, textStatus, errorThrown) {
-            console.log(textStatus);
-            console.log(errorThrown);
-        }
+        //méthode jquery.ajax
+        // $.ajax({
+        //     url: endpoint,
+        //     dataType: 'json',
+        //     data: {
+        //         queryLn: 'SPARQL',
+        //         query: prefixes + req,
+        //         limit: 'none',
+        //         infer: 'true',
+        //         Accept: 'application/sparql-results+json'
+        //     },
+        //     success: graphResultat,
+        //     error: displayError
+        // });
+
+        // function displayError(xhr, textStatus, errorThrown) {
+        //     console.log(textStatus);
+        //     console.log(errorThrown);
+        // }
 
         function graphResultat(oeuvres) {
 
