@@ -50,16 +50,17 @@ $(function() {
         var req = "SELECT DISTINCT ?oeuvre ?titre ?nom ?resum (SAMPLE(?depic) as ?fdepic) (SAMPLE(?wDepic) as ?wdepic) WHERE {<" + uri + "> foaf:focus ?person; skos:prefLabel ?nom . ?oeuvre dcterms:creator ?person; rdfs:label ?titre . OPTIONAL { ?oeuvre foaf:depiction ?wDepic. } OPTIONAL { ?person frad:biographicalInformation ?resum.} OPTIONAL { ?person foaf:depiction ?depic. }} ORDER BY RAND() LIMIT 100";
 
         //méthode fetch => ajout de {output: 'json'} dans la requête 
-        //Envoi de la requête (asynchrone avec promesse)
-        var url = new URL("http://data.bnf.fr/sparql"),
+        var url = new URL(endpoint),
             params = { queryLn: 'SPARQL', output: 'json', query: prefixes + req, limit: 'none', infer: 'true', Accept: 'application/sparql-results+json' };
         Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+        //Envoi de la requête (asynchrone avec promesse)
         fetch(url)
             .then(reponse => reponse.json())
             .then(data => graphResultat(data))
             .catch(err => console.log(err));
 
         //méthode jquery.ajax
+        //Envoi de la requête (asynchrone avec callback)
         // $.ajax({
         //     url: endpoint,
         //     dataType: 'json',
