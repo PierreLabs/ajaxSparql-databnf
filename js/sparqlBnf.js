@@ -1,11 +1,52 @@
 /*jshint esversion: 6 */
 $(function() {
 
+    var svg = d3.select("svg"),
+        width = $("#lesvg").width(), //+svg.attr("width"),
+        height = $("#lesvg").height(); //+svg.attr("height");
+
+    svg.append("g")
+        .attr("transform", "translate(" + (width) / 2 + ",200)")
+        .append("text").transition()
+        .style("font-size", "22px")
+        .style("font-family", "Arial")
+        .style("fill", "#6633cc")
+        .attr("text-anchor", "middle")
+        .text("Renseigner un URI ci-dessous puis cliquer sur envoyer.");
+
+    var gLinks,
+        gNodes,
+        simulation = d3.forceSimulation()
+        // .force("x", d3.forceX(width / 2)) // function(d) { return x(d.group); }
+        // .force("y", d3.forceY(height / 2))
+        .force("center", d3.forceCenter(width / 2, height / 2))
+        .force("collide", d3.forceCollide(12))
+        .force("charge", d3.forceManyBody().strength(-500))
+        .force("link", d3.forceLink().id(function(d) {
+            return d.uri;
+        }).distance(function(d) {
+            //évalue la longueur du lien en fonction de la longueur de chaine    
+            return 0.2;
+        })); //.id(function(d) { return d.id; })
+
+
+    var nodes = []; //Les noeuds
+    var links = []; //Les arcs
+    var dataObj = {}; //Objet des tableaux noeuds/liens
+
+
+    var tabcouleurs = ["#3366cc", "#dc3912", "#ff9900", "#109618", "#d58fd5", "#0099c6", "#dd4477", "#66aa00", "#b82e2e", "#316395", "#6873c6", "#22aa99", "#aaaa11", "#6633cc", "#e67300", "#8b0707", "#651067", "#329262", "#5574a6", "#3b3eac"];
+    var color = d3.scaleOrdinal(tabcouleurs); //d3.schemeCategory10
+    var colorManifs = d3.scaleOrdinal(d3.schemePastel2);
+
     $('#btn').click(function() {
         $("#dOeuvres").html("");
         $(".card").css('opacity', '0');
         $("#rowErr").css("opacity", "0");
         d3.selectAll("svg > *").remove();
+        gLinks = svg.append("g");
+        gNodes = svg.append("g");
+
         var uri = $('#uri').val();
         sparqlData(uri);
     });
@@ -15,28 +56,21 @@ $(function() {
         }
     });
 
-    var svg = d3.select("svg"),
-        width = $("#lesvg").width(), //+svg.attr("width"),
-        height = $("#lesvg").height(); //+svg.attr("height");
+    //Zoom
+    var zoom = d3.zoom()
+        .scaleExtent([0.8 / 2, 4])
+        .on("zoom", zoomed);
 
-    svg
-        .append("g")
-        .attr("transform", "translate(" + (width) / 2 + ",200)")
-        .append("text").transition()
-        .style("font-size", "22px")
-        .style("font-family", "Arial")
-        .style("fill", "#6633cc")
-        .attr("text-anchor", "middle")
-        .text("Renseigner un URI ci-dessous puis cliquer sur envoyer.");
+    svg.call(zoom);
+
+    function zoomed() {
+        gLinks.attr("transform", d3.event.transform);
+        gNodes.attr("transform", d3.event.transform);
+    }
 
 
 
     function sparqlData(uri) {
-
-        var nodes = []; //Les noeuds
-        var links = []; //Les arcs
-        var dataObj = {}; //Objet des tableaux noeuds/liens
-
         //http://data.bnf.fr/ark:/12148/cb11907966z Hugo
         //http://data.bnf.fr/ark:/12148/cb14793455w Giuliani
         //http://data.bnf.fr/ark:/12148/cb118900414 Balzac
@@ -56,233 +90,231 @@ $(function() {
         //Envoi de la requête (asynchrone avec promesse)
         fetch(url)
             .then(reponse => reponse.json())
-            .then(data => graphResultat(data))
+            .then(data => traitOeuvres(uri, data))
             .catch(err => console.log(err));
+    }
 
-        //méthode jquery.ajax
-        //Envoi de la requête (asynchrone avec callback)
-        // $.ajax({
-        //     url: endpoint,
-        //     dataType: 'json',
-        //     data: {
-        //         queryLn: 'SPARQL',
-        //         query: prefixes + req,
-        //         limit: 'none',
-        //         infer: 'true',
-        //         Accept: 'application/sparql-results+json'
-        //     },
-        //     success: graphResultat,
-        //     error: displayError
-        // });
+    function traitOeuvres(uri, oeuvres) {
 
-        // function displayError(xhr, textStatus, errorThrown) {
-        //     console.log(textStatus);
-        //     console.log(errorThrown);
+        if ((oeuvres.results.bindings.length)) { //S'il y a des résultats
+            $("#rowErr").remove();
+            $.each(oeuvres.results.bindings, function(i, oeuvre) {
+                if (i === 0) {
+                    //depiction auteur + abstract
+                    $("#depic").attr('src', typeof oeuvre.fdepic !== "undefined" ? oeuvre.fdepic.value : "#");
+                    $(".card-title").html(oeuvre.nom.value);
+                    $(".card-text").html(oeuvre.resum.value);
+                    $(".card").css('opacity', '1');
+
+                    //nodes index 0 = auteur
+                    nodes.push({ titre: oeuvre.nom.value, depic: typeof oeuvre.fdepic !== "undefined" ? oeuvre.fdepic.value : "#", uri: uri, group: "auteur" });
+                    nodes.push({ titre: oeuvre.titre.value, depic: typeof oeuvre.wdepic !== "undefined" ? oeuvre.wdepic.value : "/img/oeuvre.png", uri: oeuvre.oeuvre.value, dateEd: "", group: "oeuvre" });
+                } else {
+                    nodes.push({ titre: oeuvre.titre.value, depic: typeof oeuvre.wdepic !== "undefined" ? oeuvre.wdepic.value : "/img/oeuvre.png", uri: oeuvre.oeuvre.value, dateEd: "", group: "oeuvre" });
+                }
+                links.push({ source: uri, target: oeuvre.oeuvre.value, value: "Créateur" });
+            });
+            // var newnodes = supprDoublons(nodes, "id"); //Tableau des noeuds uniques
+            dataObj = {
+                nodes: nodes,
+                links: links
+            };
+
+
+            //Ajout de "cards bootstrap" pour une visualisation sous forme de liste plus traditionnelle
+            $.each(dataObj.nodes, function(i, e) { // Itération sur les noeuds
+                if (i > 0) { //Si pas l'auteur
+                    $("#dOeuvres").append("<div class='card card-oeuvre d-inline-block text-white' style='max-width:225px; background-color: " + color(e.titre) + ";'><img class='card-img-top img-rounded' src='" + e.depic + "' alt='illustration oeuvre'><div class='card-body'><h5 class='card-title'>" + e.titre + "</h5><p class='card-text'>Une oeuvre de " + dataObj.nodes[0].titre + "</p><a href='" + e.uri + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Accéder à la ressource</a></div></div>");
+                } else if (i === 0) { //Si auteur
+                    $("#cardAuteur").css("background-color", color(e.titre));
+                }
+            });
+            $(".card-oeuvre").wrapAll("<div class='card-columns d-inline-block'></div>");
+
+            renduGraph(0);
+
+        } else { //S'il n'y a pas de résultats
+            $("#btn").after("<div id='rowErr' class='alert alert-danger col-6 top-marge' role='alert'>Aucun résultat...</div>");
+            $("#rowErr").css("opacity", "1");
+        }
+    }
+
+    function reqManifs(uri) {
+
+        // d3.selectAll("svg > *").remove();
+        //point de terminaison
+        var endpoint = "http://data.bnf.fr/sparql";
+        p = "PREFIX rdarelationships: <http://rdvocab.info/RDARelationshipsWEMI/> PREFIX dcterms: <http://purl.org/dc/terms/> PREFIX bnf-onto: <http://data.bnf.fr/ontology/bnf-onto/>";
+        //Requête SPARQL
+        r = "SELECT DISTINCT ?manif ?titre ?dateEd ?isJeune WHERE{ ?manif rdarelationships:workManifested <" + uri + ">; dcterms:title ?titre; dcterms:date ?dateEd. OPTIONAL{ ?manif bnf-onto:ouvrageJeunesse ?isJeune.} }";
+
+        //méthode fetch => ajout de {output: 'json'} dans la requête 
+        var url = new URL(endpoint),
+            params = { queryLn: 'SPARQL', output: 'json', query: p + r, limit: 'none', infer: 'true', Accept: 'application/sparql-results+json' };
+        Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+        //Envoi de la requête (asynchrone avec promesse)
+        fetch(url)
+            .then(reponse => reponse.json())
+            .then(data => update(uri, data))
+            .catch(err => console.log(err));
+    }
+
+    function update(uri, data) {
+        if ((data.results.bindings.length)) {
+            $.each(data.results.bindings, function(i, manif) {
+                nodes.push({ titre: manif.titre.value, dateEd: manif.dateEd.value, uri: manif.manif.value, group: "manif" });
+                links.push({ source: manif.manif.value, target: uri, value: "workManifested" });
+            });
+            dataObj = {
+                nodes: nodes,
+                links: links
+            };
+            renduGraph(1);
+        }
+    }
+
+
+    function renduGraph(direction) {
+        //liens
+        var link = gLinks
+            .selectAll("line")
+            .attr("class", "link")
+            .data(dataObj.links);
+        var linkEnter = link.enter().append("line")
+            .attr("stroke-width", 1)
+            .attr("stroke", function(d) { return color(d.value); });
+
+        link = linkEnter.merge(link);
+
+        // //Chemins labels
+        // var pathT = gLinks.selectAll(".link")
+        //     .data(dataObj.links);
+        // var pathTEnter = pathT.enter().append("path")
+        //     .attr("class", "pathT")
+        //     .attr("id",
+        //         function(d) {
+        //             var dirpath = direction === 0 ? "path" + d.source + "_" + d.target : "path" + d.target + "_" + d.source;
+        //             return dirpath;
+        //         });
+
+        // //Labels
+        // var label = gLinks.selectAll("text")
+        //     .data(dataObj.links);
+        // var labelEnter = label.enter().append("text")
+        //     .style("font", "normal 11px Arial")
+        //     .style("fill", function(d) {
+        //         return color(d.value);
+        //     })
+        //     .attr("dy", "-5")
+        //     .attr("dx", "13")
+        //     .style('text-anchor', 'start')
+        //     .attr("fill-opacity", 0.75);
+        // labelEnter.append("textPath")
+        //     .attr("xlink:href",
+        //         function(d) {
+        //             var dirpath = direction === 0 ? "#path" + d.source + "_" + d.target : "#path" + d.target + "_" + d.source;
+        //             return dirpath;
+        //         })
+        //     .text(function(d) {
+        //         return d.value + " >";
+        //     });
+        // pathT = pathTEnter.merge(pathT);
+        // label = labelEnter.merge(label);
+
+        //Noeuds
+        var node = gNodes
+            .attr("class", "nodes")
+            .selectAll("circle")
+            .data(dataObj.nodes);
+        var nodeEnter = node.enter().append("circle")
+            .attr("r", function(d) { return d.group == "auteur" ? 30 : d.group === "oeuvre" ? 12 : 8; })
+            .attr("fill", function(d) {
+                return direction === 0 ? color(d.titre) : colorManifs(d.titre);
+            })
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended));
+        nodeEnter.on("click", function(d) {
+                reqManifs(d.uri); //envoi requête manifestations                    
+            })
+            .on("dblclick", function(d) {
+                window.open(d.uri, "_blank");
+            })
+            .append("title")
+            .text(function(d) {
+                var dtEd = d.dateEd !== "" ? " - " + d.dateEd : "";
+                return d.titre + dtEd;
+            });
+
+        node = nodeEnter.merge(node);
+
+        link.exit().remove();
+        node.exit().remove();
+
+        simulation
+            .nodes(dataObj.nodes)
+            .on("tick", ticked);
+
+        simulation.force("link")
+            .links(dataObj.links);
+
+        // function moveto(d) {
+        //     // var dirM = direction === 0 ? "M" + d.target.x + "," + d.target.y : "M" + d.source.x + "," + d.source.y;
+        //     return "M" + d.target.x + "," + d.target.y;
         // }
 
-        function graphResultat(oeuvres) {
+        // function lineto(d) {
+        //     // var dirM = direction === 0 ? "L" + d.source.x + "," + d.source.y : "L" + d.target.x + "," + d.target.y;
+        //     return "L" + d.source.x + "," + d.source.y;
+        // }
 
-            if ((oeuvres.results.bindings.length)) { //S'il y a des résultats
-                $("#rowErr").remove();
-                $.each(oeuvres.results.bindings, function(i, oeuvre) {
-                    if (i === 0) {
-                        //depiction auteur + abstract
-                        $("#depic").attr('src', oeuvre.fdepic.value);
-                        $(".card-title").html(oeuvre.nom.value);
-                        $(".card-text").html(oeuvre.resum.value);
-                        $(".card").css('opacity', '1');
+        function dragstarted(d) {
+            if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
 
-                        //nodes index 0 = auteur
-                        nodes.push({ id: oeuvre.nom.value, depic: oeuvre.fdepic.value, uri: uri, group: "auteur" });
-                        nodes.push({ id: oeuvre.titre.value, depic: typeof oeuvre.wdepic !== "undefined" ? oeuvre.wdepic.value : "/img/oeuvre.png", uri: oeuvre.oeuvre.value, group: "oeuvre" });
-                    } else {
-                        nodes.push({ id: oeuvre.titre.value, depic: typeof oeuvre.wdepic !== "undefined" ? oeuvre.wdepic.value : "/img/oeuvre.png", uri: oeuvre.oeuvre.value, group: "oeuvre" });
-                    }
-                    links.push({ source: oeuvre.nom.value, target: oeuvre.titre.value, value: "Créateur" });
+        function dragged(d) {
+            d.fx = d3.event.x;
+            d.fy = d3.event.y;
+        }
+
+        function dragended(d) {
+            if (!d3.event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+
+        //Fonction itération d3
+        function ticked() {
+            link
+                .attr("x1", function(d) {
+                    return d.source.x;
+                })
+                .attr("y1", function(d) {
+                    return d.source.y;
+                })
+                .attr("x2", function(d) {
+                    return d.target.x;
+                })
+                .attr("y2", function(d) {
+                    return d.target.y;
                 });
-                var newnodes = supprDoublons(nodes, "id"); //Tableau des noeuds uniques
-                dataObj = {
-                    nodes: newnodes,
-                    links: links
-                };
 
-                var tabcouleurs = ["#3366cc", "#dc3912", "#ff9900", "#109618", "#d58fd5", "#0099c6", "#dd4477", "#66aa00", "#b82e2e", "#316395", "#6873c6", "#22aa99", "#aaaa11", "#6633cc", "#e67300", "#8b0707", "#651067", "#329262", "#5574a6", "#3b3eac"];
-                var color = d3.scaleOrdinal(tabcouleurs); //d3.schemeCategory10
-
-
-                //Ajout de "cards bootstrap" pour une visualisation sous forme de liste plus traditionnelle
-                $.each(dataObj.nodes, function(i, e) { // Itération sur les noeuds
-                    if (i > 0) { //Si pas l'auteur
-                        $("#dOeuvres").append("<div class='card card-oeuvre d-inline-block text-white' style='max-width:225px; background-color: " + color(e.id) + ";'><img class='card-img-top img-rounded' src='" + e.depic + "' alt='illustration oeuvre'><div class='card-body'><h5 class='card-title'>" + e.id + "</h5><p class='card-text'>Une oeuvre de " + dataObj.nodes[0].id + "</p><a href='" + e.uri + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Accéder à la ressource</a></div></div>");
-                    } else if (i === 0) { //Si auteur
-                        $("#cardAuteur").css("background-color", color(e.id));
-                    }
+            node
+                .attr("cx", function(d) {
+                    return d.x;
+                })
+                .attr("cy", function(d) {
+                    return d.y;
                 });
-                $(".card-oeuvre").wrapAll("<div class='card-columns d-inline-block'></div>");
 
-                //Init D3
-                var g = svg.append("g");
-
-                //Zoom
-                var zoom = d3.zoom()
-                    .scaleExtent([0.8 / 2, 4])
-                    .on("zoom", zoomed);
-
-                svg.call(zoom);
-
-                //Mise en place des forces
-                var attractForce = d3.forceManyBody().strength(-500).distanceMin(25).distanceMax(200);
-                var collisionForce = d3.forceCollide(20).strength(1).iterations(64);
-                var simulation = d3.forceSimulation()
-                    .force("link", d3.forceLink().id(function(d) {
-                        return d.id;
-                    }).distance(function(d) {
-                        //évalue la longueur du lien en fonction de la longueur de chaine
-                        return d.value.length * 10;
-                    }))
-                    .force("attractForce", attractForce)
-                    .force("collisionForce", collisionForce)
-                    .force("center", d3.forceCenter(width / 2, height / 2));
-
-                //liens
-                var link = g
-                    .attr("class", "links")
-                    .selectAll("line")
-                    .data(dataObj.links)
-                    .enter().append("line")
-                    .attr("stroke-width", 1)
-                    .attr("stroke", function(d) { return color(d.value); });
-
-                //Chemins labels
-                var pathT = g.selectAll(".links")
-                    .data(dataObj.links)
-                    .enter().append("path")
-                    .attr("class", "pathT")
-                    .attr("id",
-                        function(d) {
-                            return "path" + d.source + "_" + d.target;
-                        });
-
-                //Labels
-                var label = g.selectAll("text")
-                    .data(dataObj.links)
-                    .enter().append("text");
-
-                label
-                    .style("font", "normal 11px Arial")
-                    .style("fill", function(d) {
-                        return color(d.value);
-                    })
-                    .attr("dy", "-5")
-                    .attr("dx", "13")
-                    .style('text-anchor', 'start')
-                    .attr("fill-opacity", 0.75);
-
-                label.append("textPath")
-                    .attr("xlink:href",
-                        function(d) {
-                            return "#path" + d.source + "_" + d.target;
-                        })
-                    .text(function(d) {
-                        return d.value + " >";
-                    });
-
-                //Noeuds
-                var node = g
-                    .attr("class", "nodes")
-                    .selectAll("circle")
-                    .data(dataObj.nodes)
-                    .enter().append("circle")
-                    .attr("r", function(d) { return d.group == "auteur" ? 30 : 10; })
-                    .attr("fill", function(d) {
-                        return color(d.id);
-                    })
-                    .call(d3.drag()
-                        .on("start", dragstarted)
-                        .on("drag", dragged)
-                        .on("end", dragended));
-
-                //Title pour avoir l'id du noeud au survol + click redir ressource
-                node
-                    .on("click", function(d) {
-                        window.open(d.uri, "_blank");
-                    })
-                    .append("title")
-                    .text(function(d) {
-                        return d.id;
-                    });
-
-                simulation
-                    .nodes(dataObj.nodes)
-                    .on("tick", ticked);
-
-                simulation.force("link")
-                    .links(dataObj.links);
-
-            } else { //S'il n'y a pas de résultats
-                $("#btn").after("<div id='rowErr' class='alert alert-danger col-6 top-marge' role='alert'>Aucun résultat...</div>");
-                $("#rowErr").css("opacity", "1");
-            }
-
-            function zoomed() {
-                g.attr("transform", d3.event.transform);
-            }
-
-            function moveto(d) {
-                return "M" + d.target.x + "," + d.target.y;
-            }
-
-            function lineto(d) {
-                return "L" + d.source.x + "," + d.source.y;
-            }
-
-            //Fonction itération d3
-            function ticked() {
-                link
-                    .attr("x1", function(d) {
-                        return d.source.x;
-                    })
-                    .attr("y1", function(d) {
-                        return d.source.y;
-                    })
-                    .attr("x2", function(d) {
-                        return d.target.x;
-                    })
-                    .attr("y2", function(d) {
-                        return d.target.y;
-                    });
-
-                node
-                    .attr("cx", function(d) {
-                        return d.x;
-                    })
-                    .attr("cy", function(d) {
-                        return d.y;
-                    });
-
-                pathT
-                    .attr("d",
-                        function(d) {
-                            return moveto(d) + lineto(d);
-                        });
-            }
-
-            function dragstarted(d) {
-                if (!d3.event.active) simulation.alphaTarget(0.3).restart();
-                d.fx = d.x;
-                d.fy = d.y;
-            }
-
-            function dragged(d) {
-                d.fx = d3.event.x;
-                d.fy = d3.event.y;
-            }
-
-            function dragended(d) {
-                if (!d3.event.active) simulation.alphaTarget(0);
-                d.fx = null;
-                d.fy = null;
-            }
+            // pathT
+            //     .attr("d",
+            //         function(d) {
+            //             return moveto(d) + lineto(d);
+            //         });
         }
     }
 
