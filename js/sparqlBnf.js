@@ -16,18 +16,7 @@ $(function() {
 
     var gLinks,
         gNodes,
-        simulation = d3.forceSimulation()
-        // .force("x", d3.forceX(width / 2)) // function(d) { return x(d.group); }
-        // .force("y", d3.forceY(height / 2))
-        .force("center", d3.forceCenter(width / 2, height / 2))
-        .force("collide", d3.forceCollide(12))
-        .force("charge", d3.forceManyBody().strength(-500))
-        .force("link", d3.forceLink().id(function(d) {
-            return d.uri;
-        }).distance(function(d) {
-            //évalue la longueur du lien en fonction de la longueur de chaine    
-            return 0.2;
-        })); //.id(function(d) { return d.id; })
+        simulation;
 
 
     var nodes = []; //Les noeuds
@@ -43,9 +32,24 @@ $(function() {
         $("#dOeuvres").html("");
         $(".card").css('opacity', '0');
         $("#rowErr").css("opacity", "0");
+        nodes = []; //Les noeuds
+        links = []; //Les arcs
+        dataObj = {}; //Objet des tableaux noeuds/liens
         d3.selectAll("svg > *").remove();
         gLinks = svg.append("g");
         gNodes = svg.append("g");
+        simulation = d3.forceSimulation()
+            // .force("x", d3.forceX(width / 2)) // function(d) { return x(d.group); }
+            // .force("y", d3.forceY(height / 2))
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("collide", d3.forceCollide(2))
+            .force("charge", d3.forceManyBody().strength(-350)) //.strength(-500)
+            .force("link", d3.forceLink().id(function(d) {
+                return d.uri;
+            }).distance(function(d) {
+                //évalue la longueur du lien en fonction de la longueur de chaine    
+                return 0.15;
+            }).strength(2)); //.id(function(d) { return d.id; })
 
         var uri = $('#uri').val();
         sparqlData(uri);
@@ -185,41 +189,6 @@ $(function() {
             .attr("stroke", function(d) { return color(d.value); });
 
         link = linkEnter.merge(link);
-
-        // //Chemins labels
-        // var pathT = gLinks.selectAll(".link")
-        //     .data(dataObj.links);
-        // var pathTEnter = pathT.enter().append("path")
-        //     .attr("class", "pathT")
-        //     .attr("id",
-        //         function(d) {
-        //             var dirpath = direction === 0 ? "path" + d.source + "_" + d.target : "path" + d.target + "_" + d.source;
-        //             return dirpath;
-        //         });
-
-        // //Labels
-        // var label = gLinks.selectAll("text")
-        //     .data(dataObj.links);
-        // var labelEnter = label.enter().append("text")
-        //     .style("font", "normal 11px Arial")
-        //     .style("fill", function(d) {
-        //         return color(d.value);
-        //     })
-        //     .attr("dy", "-5")
-        //     .attr("dx", "13")
-        //     .style('text-anchor', 'start')
-        //     .attr("fill-opacity", 0.75);
-        // labelEnter.append("textPath")
-        //     .attr("xlink:href",
-        //         function(d) {
-        //             var dirpath = direction === 0 ? "#path" + d.source + "_" + d.target : "#path" + d.target + "_" + d.source;
-        //             return dirpath;
-        //         })
-        //     .text(function(d) {
-        //         return d.value + " >";
-        //     });
-        // pathT = pathTEnter.merge(pathT);
-        // label = labelEnter.merge(label);
 
         //Noeuds
         var node = gNodes
