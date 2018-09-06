@@ -28,7 +28,7 @@ $(function() {
 
     var tabcouleurs = ["#3366cc", "#dc3912", "#ff9900", "#109618", "#d58fd5", "#0099c6", "#dd4477", "#66aa00", "#b82e2e", "#316395", "#6873c6", "#22aa99", "#aaaa11", "#6633cc", "#e67300", "#8b0707", "#651067", "#329262", "#5574a6", "#3b3eac"];
     var color = d3.scaleOrdinal(tabcouleurs); //d3.schemeCategory10
-    var colorManifs = d3.scaleOrdinal(d3.schemePastel2);
+    // var colorManifs = d3.scaleOrdinal(d3.schemePastel2);
 
     $('#btn').click(function() {
         $("#dOeuvres").html("");
@@ -50,7 +50,7 @@ $(function() {
                 return d.uri;
             }).distance(function(d) {
                 //évalue la longueur du lien en fonction de la longueur de chaine    
-                return 0.15;
+                return 0.17;
             }).strength(2)); //.id(function(d) { return d.id; })
 
         var uri = $('#uri').val();
@@ -183,7 +183,7 @@ $(function() {
                 var htmlTemp = $("#manifsModalBody").html();
                 var newHtml = "<div class='card-columns d-inline-block'>" + htmlTemp + "</div>";
                 $("#manifsModalBody").html(newHtml);
-                $("#manifsModalTitle").html("Manifestations liées à <h1><cite><strong>" + oeuvreEnCours + "</strong></cite></h1>").css('background-color', coulOeuvreEnCours).css('padding', '10px 20px');
+                $("#manifsModalTitle").html("Manifestations liées à <h1><cite><strong>" + oeuvreEnCours + "</strong></cite></h1>").css('background-color', coulOeuvreEnCours).css('color', '#fff').css('padding', '10px 20px');
                 $('#manifsModal').modal('show');
             }, 2000);
             renduGraph(1);
