@@ -16,7 +16,8 @@ $(function() {
 
     var gLinks,
         gNodes,
-        simulation;
+        simulation,
+        oeuvreEnCours;
 
 
     var nodes = []; //Les noeuds
@@ -128,7 +129,7 @@ $(function() {
             //Ajout de "cards bootstrap" pour une visualisation sous forme de liste plus traditionnelle
             $.each(dataObj.nodes, function(i, e) { // Itération sur les noeuds
                 if (i > 0) { //Si pas l'auteur
-                    $("#dOeuvres").append("<div class='card card-oeuvre d-inline-block text-white' style='max-width:225px; background-color: " + color(e.titre) + ";'><img class='card-img-top img-rounded' src='" + e.depic + "' alt='illustration oeuvre'><div class='card-body'><h5 class='card-title'>" + e.titre + "</h5><p class='card-text'>Une oeuvre de " + dataObj.nodes[0].titre + "</p><a href='" + e.uri + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Accéder à la ressource</a></div></div>");
+                    $("#dOeuvres").append("<div class='card card-oeuvre d-inline-block text-white' data-uri='" + e.uri + "' style='max-width:225px; background-color: " + color(e.titre) + ";'><img class='card-img-top img-rounded' src='" + e.depic + "' alt='illustration oeuvre'><div class='card-body'><h5 class='card-title'>" + e.titre + "</h5><p class='card-text'>Une oeuvre de " + dataObj.nodes[0].titre + "</p><a href='" + e.uri + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Accéder à la ressource</a></div></div>");
                 } else if (i === 0) { //Si auteur
                     $("#cardAuteur").css("background-color", color(e.titre));
                 }
@@ -164,15 +165,25 @@ $(function() {
     }
 
     function update(uri, data) {
+        $("#manifsModalBody").html("");
         if ((data.results.bindings.length)) {
             $.each(data.results.bindings, function(i, manif) {
-                nodes.push({ titre: manif.titre.value, pub: manif.pub.value, desc: manif.desc.value, note: manif.note.value, uri: typeof manif.repro === "undefined" ? manif.manif.value : manif.repro.value, isJeune: manif.isJeune, clicked: false, group: "manif" });
+                var lien = typeof manif.repro === "undefined" ? manif.manif.value : manif.repro.value;
+                nodes.push({ titre: manif.titre.value, pub: manif.pub.value, desc: manif.desc.value, note: manif.note.value, uri: lien, isJeune: manif.isJeune, clicked: false, group: "manif" });
                 links.push({ source: typeof manif.repro === "undefined" ? manif.manif.value : manif.repro.value, target: uri, value: "workManifested" });
+                $("#manifsModalBody").append("<div class='card card-manif d-inline-block text-white' data-uri='" + lien + "' style='max-width:200px; background-color: " + color(manif.titre.value) + "; margin:10px;'><img class='card-img-top img-rounded' src='/img/manif.png' alt='illustration manifestation'><div class='card-body'><h6 class='card-title'>" + manif.titre.value + "</h6><p class='card-text'>" + manif.desc.value + " - " + manif.pub.value + "</p><a href='" + lien + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Accéder à la ressource</a></div></div>");
             });
             dataObj = {
                 nodes: nodes,
                 links: links
             };
+            setTimeout(function() {
+                var htmlTemp = $("#manifsModalBody").html();
+                var newHtml = "<div class='card-columns d-inline-block'>" + htmlTemp + "</div>";
+                $("#manifsModalBody").html(newHtml);
+                $("#manifsModalTitle").html("Manifestations liées à <cite><strong>" + oeuvreEnCours + "</strong></cite>");
+                $('#manifsModal').modal('show');
+            }, 2000);
             renduGraph(1);
         }
     }
@@ -207,10 +218,15 @@ $(function() {
                 .on("end", dragended));
         nodeEnter.on("click", function(d) {
                 if (!d.clicked) {
+                    oeuvreEnCours = d.titre;
                     reqManifs(d.uri); //envoi requête manifestations
                     d.clicked = true;
                 }
             })
+            // .on("mouseover", function(d) {
+            //     var lacarte = d3.selectAll("div.card").nodes().filter(function(c) { return c.dataset.uri === d.uri; });
+            //     console.log(lacarte);
+            // })
             .on("dblclick", function(d) {
                 window.open(d.uri, "_blank");
             })
