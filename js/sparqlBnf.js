@@ -87,7 +87,7 @@ $(function() {
         //Requête SPARQL
         var req = "SELECT DISTINCT ?oeuvre ?titre ?nom ?resum (SAMPLE(?depic) as ?fdepic) (SAMPLE(?wDepic) as ?wdepic) WHERE {<" + uri + "> foaf:focus ?person; skos:prefLabel ?nom . ?oeuvre dcterms:creator ?person; rdfs:label ?titre . OPTIONAL { ?oeuvre foaf:depiction ?wDepic. } OPTIONAL { ?person frad:biographicalInformation ?resum.} OPTIONAL { ?person foaf:depiction ?depic. }} ORDER BY RAND() LIMIT 100";
 
-        //méthode fetch => ajout de {output: 'json'} dans la requête 
+        //fetch databnf sparql
         var url = new URL(endpoint),
             params = { queryLn: 'SPARQL', output: 'json', query: prefixes + req, limit: 'none', infer: 'true', Accept: 'application/sparql-results+json' };
         Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
@@ -150,9 +150,9 @@ $(function() {
         var endpoint = "http://data.bnf.fr/sparql";
         p = "PREFIX rdarelationships: <http://rdvocab.info/RDARelationshipsWEMI/> PREFIX dcterms: <http://purl.org/dc/terms/> PREFIX bnf-onto: <http://data.bnf.fr/ontology/bnf-onto/>";
         //Requête SPARQL
-        r = "SELECT DISTINCT ?manif ?titre ?dateEd ?isJeune WHERE{ ?manif rdarelationships:workManifested <" + uri + ">; dcterms:title ?titre; dcterms:date ?dateEd. OPTIONAL{ ?manif bnf-onto:ouvrageJeunesse ?isJeune.} }";
+        r = "SELECT DISTINCT ?manif ?titre ?isJeune ?desc ?pub ?note ?repro WHERE{ ?manif rdarelationships:workManifested <" + uri + ">; dcterms:title ?titre; dcterms:description ?desc; dcterms:publisher ?pub; <http://rdvocab.info/Elements/note> ?note. OPTIONAL{ ?manif bnf-onto:ouvrageJeunesse ?isJeune.} OPTIONAL{ ?manif <http://rdvocab.info/RDARelationshipsWEMI/electronicReproduction> ?repro.} }";
 
-        //méthode fetch => ajout de {output: 'json'} dans la requête 
+        //fetch databnf sparql
         var url = new URL(endpoint),
             params = { queryLn: 'SPARQL', output: 'json', query: p + r, limit: 'none', infer: 'true', Accept: 'application/sparql-results+json' };
         Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
@@ -166,8 +166,8 @@ $(function() {
     function update(uri, data) {
         if ((data.results.bindings.length)) {
             $.each(data.results.bindings, function(i, manif) {
-                nodes.push({ titre: manif.titre.value, dateEd: manif.dateEd.value, uri: manif.manif.value, isJeune: manif.isJeune, group: "manif" });
-                links.push({ source: manif.manif.value, target: uri, value: "workManifested" });
+                nodes.push({ titre: manif.titre.value, pub: manif.pub.value, desc: manif.desc.value, note: manif.note.value, uri: typeof manif.repro === "undefined" ? manif.manif.value : manif.repro.value, isJeune: manif.isJeune, clicked: false, group: "manif" });
+                links.push({ source: typeof manif.repro === "undefined" ? manif.manif.value : manif.repro.value, target: uri, value: "workManifested" });
             });
             dataObj = {
                 nodes: nodes,
@@ -178,7 +178,7 @@ $(function() {
     }
 
 
-    function renduGraph(direction) {
+    function renduGraph(indexRequete) {
         //liens
         var link = gLinks
             .selectAll("line")
@@ -198,23 +198,26 @@ $(function() {
         var nodeEnter = node.enter().append("circle")
             .attr("r", function(d) { return d.group == "auteur" ? 30 : d.group === "oeuvre" ? 12 : 8; })
             .attr("fill", function(d) {
-                console.log(d.isJeune);
-                return d.isJeune ? "#FDC745" : direction === 0 ? color(d.titre) : "rgb(51, 102, 204)"; //colorManifs(d.titre);
+                var coul = d.isJeune ? "#FDC745" : indexRequete === 1 && d.uri.indexOf('gallica') > -1 ? '#D2CFC8' : indexRequete === 0 ? color(d.titre) : "rgb(51, 102, 204)";
+                return coul; //colorManifs(d.titre);
             })
             .call(d3.drag()
                 .on("start", dragstarted)
                 .on("drag", dragged)
                 .on("end", dragended));
         nodeEnter.on("click", function(d) {
-                reqManifs(d.uri); //envoi requête manifestations                    
+                if (!d.clicked) {
+                    reqManifs(d.uri); //envoi requête manifestations
+                    d.clicked = true;
+                }
             })
             .on("dblclick", function(d) {
                 window.open(d.uri, "_blank");
             })
             .append("title")
             .text(function(d) {
-                var dtEd = d.dateEd !== "" ? " - " + d.dateEd : "";
-                return d.titre + dtEd;
+                var title = indexRequete === 0 ? d.titre : d.titre + " - " + d.desc + " - " + d.note + " - " + d.pub;
+                return title;
             });
 
         node = nodeEnter.merge(node);
@@ -230,12 +233,12 @@ $(function() {
             .links(dataObj.links);
 
         // function moveto(d) {
-        //     // var dirM = direction === 0 ? "M" + d.target.x + "," + d.target.y : "M" + d.source.x + "," + d.source.y;
+        //     // var dirM = indexRequete === 0 ? "M" + d.target.x + "," + d.target.y : "M" + d.source.x + "," + d.source.y;
         //     return "M" + d.target.x + "," + d.target.y;
         // }
 
         // function lineto(d) {
-        //     // var dirM = direction === 0 ? "L" + d.source.x + "," + d.source.y : "L" + d.target.x + "," + d.target.y;
+        //     // var dirM = indexRequete === 0 ? "L" + d.source.x + "," + d.source.y : "L" + d.target.x + "," + d.target.y;
         //     return "L" + d.source.x + "," + d.source.y;
         // }
 
