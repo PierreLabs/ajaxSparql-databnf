@@ -28,8 +28,9 @@ body {
 }
 
 .card-img-top {
-    height: 220px;
-    object-fit: cover;
+    height: 150px;
+    object-fit: none;
+    margin-top: 10px;
 }
 
 .scroll {

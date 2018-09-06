@@ -17,7 +17,8 @@ $(function() {
     var gLinks,
         gNodes,
         simulation,
-        oeuvreEnCours;
+        oeuvreEnCours,
+        coulOeuvreEnCours;
 
 
     var nodes = []; //Les noeuds
@@ -171,7 +172,8 @@ $(function() {
                 var lien = typeof manif.repro === "undefined" ? manif.manif.value : manif.repro.value;
                 nodes.push({ titre: manif.titre.value, pub: manif.pub.value, desc: manif.desc.value, note: manif.note.value, uri: lien, isJeune: manif.isJeune, clicked: false, group: "manif" });
                 links.push({ source: typeof manif.repro === "undefined" ? manif.manif.value : manif.repro.value, target: uri, value: "workManifested" });
-                $("#manifsModalBody").append("<div class='card card-manif d-inline-block text-white' data-uri='" + lien + "' style='max-width:200px; background-color: " + color(manif.titre.value) + "; margin:10px;'><img class='card-img-top img-rounded' src='/img/manif.png' alt='illustration manifestation'><div class='card-body'><h6 class='card-title'>" + manif.titre.value + "</h6><p class='card-text'>" + manif.desc.value + " - " + manif.pub.value + "</p><a href='" + lien + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Accéder à la ressource</a></div></div>");
+                var imgCard = !manif.isJeune ? '/img/manif.png' : '/img/manifJ.png';
+                $("#manifsModalBody").append("<div class='card card-manif d-inline-block text-white' data-uri='" + lien + "' style='max-width:200px; background-color: " + coulOeuvreEnCours + "; margin:10px;'><img class='card-img-top img-rounded' src=" + imgCard + " alt='illustration manifestation'><div class='card-body'><h6 class='card-title'>" + manif.titre.value + "</h6><p class='card-text'>" + manif.desc.value + " - " + manif.pub.value + "</p><a href='" + lien + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Accéder à la ressource</a></div></div>");
             });
             dataObj = {
                 nodes: nodes,
@@ -181,7 +183,7 @@ $(function() {
                 var htmlTemp = $("#manifsModalBody").html();
                 var newHtml = "<div class='card-columns d-inline-block'>" + htmlTemp + "</div>";
                 $("#manifsModalBody").html(newHtml);
-                $("#manifsModalTitle").html("Manifestations liées à <cite><strong>" + oeuvreEnCours + "</strong></cite>");
+                $("#manifsModalTitle").html("Manifestations liées à <h1><cite><strong>" + oeuvreEnCours + "</strong></cite></h1>").css('background-color', coulOeuvreEnCours).css('padding', '10px 20px');
                 $('#manifsModal').modal('show');
             }, 2000);
             renduGraph(1);
@@ -218,6 +220,7 @@ $(function() {
                 .on("end", dragended));
         nodeEnter.on("click", function(d) {
                 if (!d.clicked) {
+                    coulOeuvreEnCours = color(d.titre);
                     oeuvreEnCours = d.titre;
                     reqManifs(d.uri); //envoi requête manifestations
                     d.clicked = true;
