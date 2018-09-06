@@ -166,7 +166,7 @@ $(function() {
     function update(uri, data) {
         if ((data.results.bindings.length)) {
             $.each(data.results.bindings, function(i, manif) {
-                nodes.push({ titre: manif.titre.value, dateEd: manif.dateEd.value, uri: manif.manif.value, group: "manif" });
+                nodes.push({ titre: manif.titre.value, dateEd: manif.dateEd.value, uri: manif.manif.value, isJeune: manif.isJeune, group: "manif" });
                 links.push({ source: manif.manif.value, target: uri, value: "workManifested" });
             });
             dataObj = {
@@ -198,7 +198,8 @@ $(function() {
         var nodeEnter = node.enter().append("circle")
             .attr("r", function(d) { return d.group == "auteur" ? 30 : d.group === "oeuvre" ? 12 : 8; })
             .attr("fill", function(d) {
-                return direction === 0 ? color(d.titre) : colorManifs(d.titre);
+                console.log(d.isJeune);
+                return d.isJeune ? "#FDC745" : direction === 0 ? color(d.titre) : "rgb(51, 102, 204)"; //colorManifs(d.titre);
             })
             .call(d3.drag()
                 .on("start", dragstarted)
