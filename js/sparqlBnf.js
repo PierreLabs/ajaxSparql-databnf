@@ -17,6 +17,7 @@ $(function() {
     var gLinks,
         gNodes,
         simulation,
+        lesManifs,
         oeuvreEnCours,
         coulOeuvreEnCours;
 
@@ -41,17 +42,15 @@ $(function() {
         gLinks = svg.append("g");
         gNodes = svg.append("g");
         simulation = d3.forceSimulation()
-            // .force("x", d3.forceX(width / 2)) // function(d) { return x(d.group); }
-            // .force("y", d3.forceY(height / 2))
             .force("center", d3.forceCenter(width / 2, height / 2))
             .force("collide", d3.forceCollide(2))
             .force("charge", d3.forceManyBody().strength(-350)) //.strength(-500)
             .force("link", d3.forceLink().id(function(d) {
                 return d.uri;
             }).distance(function(d) {
-                //évalue la longueur du lien en fonction de la longueur de chaine    
-                return 0.17;
-            }).strength(2)); //.id(function(d) { return d.id; })
+                //longueur du lien : plus important si lien créateur
+                return d.value === "Creator" ? 30 : 0.2;
+            }).strength(2));
 
         var uri = $('#uri').val();
         sparqlData(uri);
@@ -118,7 +117,7 @@ $(function() {
                 } else {
                     nodes.push({ titre: oeuvre.titre.value, depic: typeof oeuvre.wdepic !== "undefined" ? oeuvre.wdepic.value : "/img/oeuvre.png", uri: oeuvre.oeuvre.value, dateEd: "", group: "oeuvre" });
                 }
-                links.push({ source: uri, target: oeuvre.oeuvre.value, value: "Créateur" });
+                links.push({ source: uri, target: oeuvre.oeuvre.value, value: "Creator" });
             });
             // var newnodes = supprDoublons(nodes, "id"); //Tableau des noeuds uniques
             dataObj = {
@@ -146,8 +145,6 @@ $(function() {
     }
 
     function reqManifs(uri) {
-
-        // d3.selectAll("svg > *").remove();
         //point de terminaison
         var endpoint = "http://data.bnf.fr/sparql";
         p = "PREFIX rdarelationships: <http://rdvocab.info/RDARelationshipsWEMI/> PREFIX dcterms: <http://purl.org/dc/terms/> PREFIX bnf-onto: <http://data.bnf.fr/ontology/bnf-onto/>";
@@ -158,19 +155,19 @@ $(function() {
         var url = new URL(endpoint),
             params = { queryLn: 'SPARQL', output: 'json', query: p + r, limit: 'none', infer: 'true', Accept: 'application/sparql-results+json' };
         Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
-        //Envoi de la requête (asynchrone avec promesse)
+        //Envoi de la requête (asynchrone avec promesse) => ne fonctionne pas sous IE et Edge
         fetch(url)
             .then(reponse => reponse.json())
-            .then(data => update(uri, data))
+            .then(data => update(uri, data, false))
             .catch(err => console.log(err));
     }
 
-    function update(uri, data) {
+    function update(uri, data, isClicked) {
         $("#manifsModalBody").html("");
-        if ((data.results.bindings.length)) {
+        if ((data.results && data.results.bindings.length) && !isClicked) {
             $.each(data.results.bindings, function(i, manif) {
                 var lien = typeof manif.repro === "undefined" ? manif.manif.value : manif.repro.value;
-                nodes.push({ titre: manif.titre.value, pub: manif.pub.value, desc: manif.desc.value, note: manif.note.value, uri: lien, isJeune: manif.isJeune, clicked: false, group: "manif" });
+                nodes.push({ titre: manif.titre.value, pub: manif.pub.value, desc: manif.desc.value, note: manif.note.value, uri: lien, uriOeuvre: uri, isJeune: manif.isJeune, clicked: false, group: "manif" });
                 links.push({ source: typeof manif.repro === "undefined" ? manif.manif.value : manif.repro.value, target: uri, value: "workManifested" });
                 var imgCard = !manif.isJeune ? '/img/manif.png' : '/img/manifJ.png';
                 $("#manifsModalBody").append("<div class='card card-manif d-inline-block text-white' data-uri='" + lien + "' style='max-width:200px; background-color: " + coulOeuvreEnCours + "; margin:10px;'><img class='card-img-top img-rounded' src=" + imgCard + " alt='illustration manifestation'><div class='card-body'><h6 class='card-title'>" + manif.titre.value + "</h6><p class='card-text'>" + manif.desc.value + " - " + manif.pub.value + "</p><a href='" + lien + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Accéder à la ressource</a></div></div>");
@@ -180,13 +177,23 @@ $(function() {
                 links: links
             };
             setTimeout(function() {
-                var htmlTemp = $("#manifsModalBody").html();
-                var newHtml = "<div class='card-columns d-inline-block'>" + htmlTemp + "</div>";
-                $("#manifsModalBody").html(newHtml);
-                $("#manifsModalTitle").html("Manifestations liées à <h1><cite><strong>" + oeuvreEnCours + "</strong></cite></h1>").css('background-color', coulOeuvreEnCours).css('color', '#fff').css('padding', '10px 20px');
+                $(".card-manif").wrapAll("<div class='card-columns d-inline-block'></div>");
+                $("#manifsModalTitle").html("Manifestations liées à <h1><cite><strong>" + oeuvreEnCours + "</strong></cite></h1>" + data.results.bindings.length + " documents").css('background-color', coulOeuvreEnCours).css('color', '#fff').css('padding', '10px 20px');
                 $('#manifsModal').modal('show');
-            }, 2000);
+            }, 1200);
             renduGraph(1);
+        } else if (isClicked) {
+            lesManifs = data.filter(function(m) {
+                return m.uriOeuvre === uri;
+            });
+            $.each(lesManifs, function(i, m) {
+                var imgCard = !m.isJeune ? '/img/manif.png' : '/img/manifJ.png';
+                $("#manifsModalBody").append("<div class='card card-manif d-inline-block text-white' data-uri='" + m.uri + "' style='max-width:200px; background-color: " + coulOeuvreEnCours + "; margin:10px;'><img class='card-img-top img-rounded' src=" + imgCard + " alt='illustration manifestation'><div class='card-body'><h6 class='card-title'>" + m.titre + "</h6><p class='card-text'>" + m.desc + " - " + m.pub + "</p><a href='" + m.uri + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Accéder à la ressource</a></div></div>");
+            });
+
+            $(".card-manif").wrapAll("<div class='card-columns d-inline-block'></div>");
+            $("#manifsModalTitle").html("Manifestations liées à <h1><cite><strong>" + oeuvreEnCours + "</strong></cite></h1>" + lesManifs.length + " documents").css('background-color', coulOeuvreEnCours).css('color', '#fff').css('padding', '10px 20px');
+            $('#manifsModal').modal('show');
         }
     }
 
@@ -219,17 +226,17 @@ $(function() {
                 .on("drag", dragged)
                 .on("end", dragended));
         nodeEnter.on("click", function(d) {
-                if (!d.clicked) {
+                if (!d.clicked) { //L'oeuvre a-t-elle déjà été explorée ?
                     coulOeuvreEnCours = color(d.titre);
                     oeuvreEnCours = d.titre;
                     reqManifs(d.uri); //envoi requête manifestations
                     d.clicked = true;
+                } else {
+                    coulOeuvreEnCours = color(d.titre);
+                    oeuvreEnCours = d.titre;
+                    update(d.uri, nodes, true);
                 }
             })
-            // .on("mouseover", function(d) {
-            //     var lacarte = d3.selectAll("div.card").nodes().filter(function(c) { return c.dataset.uri === d.uri; });
-            //     console.log(lacarte);
-            // })
             .on("dblclick", function(d) {
                 window.open(d.uri, "_blank");
             })
@@ -310,10 +317,10 @@ $(function() {
         }
     }
 
-    //Fonction pour supprimer les doublons dans le tableau des noeuds
-    function supprDoublons(myArr, prop) {
-        return myArr.filter((obj, pos, arr) => {
-            return arr.map(mapObj => mapObj[prop]).indexOf(obj[prop]) === pos;
-        });
-    }
+    // //Fonction pour supprimer les doublons dans le tableau des noeuds
+    // function supprDoublons(myArr, prop) {
+    //     return myArr.filter((obj, pos, arr) => {
+    //         return arr.map(mapObj => mapObj[prop]).indexOf(obj[prop]) === pos;
+    //     });
+    // }
 });
