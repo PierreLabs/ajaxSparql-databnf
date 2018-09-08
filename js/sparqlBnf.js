@@ -136,6 +136,17 @@ $(function() {
             });
             $(".card-oeuvre").wrapAll("<div class='card-columns d-inline-block'></div>");
 
+            d3.selectAll('.card-oeuvre').on("click", function() {
+                var luri = this.dataset.uri;
+                var leNode = d3.selectAll('circle').filter(function(n) {
+                    return n.uri === luri;
+                });
+                $('html, body').animate({ scrollTop: 0 }, 200);
+                setTimeout(function() {
+                    leNode.dispatch('click');
+                }, 300);
+            });
+
             renduGraph(0);
 
         } else { //S'il n'y a pas de résultats
