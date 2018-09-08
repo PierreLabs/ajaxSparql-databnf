@@ -136,17 +136,6 @@ $(function() {
             });
             $(".card-oeuvre").wrapAll("<div class='card-columns d-inline-block'></div>");
 
-            d3.selectAll('.card-oeuvre').on("click", function() {
-                var luri = this.dataset.uri;
-                var leNode = d3.selectAll('circle').filter(function(n) {
-                    return n.uri === luri;
-                });
-                $('html, body').animate({ scrollTop: 0 }, 200);
-                setTimeout(function() {
-                    leNode.dispatch('click');
-                }, 300);
-            });
-
             renduGraph(0);
 
         } else { //S'il n'y a pas de résultats
@@ -232,6 +221,9 @@ $(function() {
                 var coul = d.isJeune ? "#FDC745" : indexRequete === 1 && d.uri.indexOf('gallica') > -1 ? '#D2CFC8' : indexRequete === 0 ? color(d.titre) : "rgb(51, 102, 204)";
                 return coul; //colorManifs(d.titre);
             })
+            .style('cursor', function(d) {
+                return indexRequete === 0 && d.group !== "auteur" ? 'pointer' : 'auto';
+            })
             .call(d3.drag()
                 .on("start", dragstarted)
                 .on("drag", dragged)
@@ -256,6 +248,19 @@ $(function() {
                 var title = indexRequete === 0 ? d.titre : d.titre + " - " + d.desc + " - " + d.note + " - " + d.pub;
                 return title;
             });
+
+        var cardOeuvres = d3.select('body').selectAll('.card-oeuvre');
+
+        cardOeuvres.on("click", function() {
+            var luri = this.dataset.uri;
+            var leNode = node.filter(function(n) {
+                return n.uri === luri;
+            });
+            $('html, body').animate({ scrollTop: 0 }, 200);
+            setTimeout(function() {
+                leNode.dispatch('click');
+            }, 300);
+        });
 
         node = nodeEnter.merge(node);
 
