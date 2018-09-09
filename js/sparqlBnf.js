@@ -2,8 +2,19 @@
 $(function() {
 
     var svg = d3.select("svg"),
-        width = $("#lesvg").width(), //+svg.attr("width"),
-        height = $("#lesvg").height(); //+svg.attr("height");
+        width = $("#lesvg").width(),
+        height = $("#lesvg").height();
+
+    //Zoom
+    var zoom = d3.zoom()
+        .scaleExtent([0.8 / 2, 4])
+        .on("zoom", zoomed);
+    svg.call(zoom);
+
+    function zoomed() {
+        gLinks.attr("transform", d3.event.transform);
+        gNodes.attr("transform", d3.event.transform);
+    }
 
     svg.append("g")
         .attr("transform", "translate(" + (width) / 2 + ",200)")
@@ -18,19 +29,19 @@ $(function() {
         gNodes,
         simulation,
         lesManifs,
-        oeuvreEnCours,
-        coulOeuvreEnCours;
+        oeuvreEnCours, //Suivi de l'oeuvre en cours d'exploration...
+        coulOeuvreEnCours; //...Et la couleur correspondante
 
 
     var nodes = []; //Les noeuds
     var links = []; //Les arcs
-    var dataObj = {}; //Objet des tableaux noeuds/liens
+    var dataObj = {}; //Objet des tableaux noeuds/liens (graphe "théorique")
 
 
     var tabcouleurs = ["#3366cc", "#dc3912", "#ff9900", "#109618", "#d58fd5", "#0099c6", "#dd4477", "#66aa00", "#b82e2e", "#316395", "#6873c6", "#22aa99", "#aaaa11", "#6633cc", "#e67300", "#8b0707", "#651067", "#329262", "#5574a6", "#3b3eac"];
     var color = d3.scaleOrdinal(tabcouleurs); //d3.schemeCategory10
-    // var colorManifs = d3.scaleOrdinal(d3.schemePastel2);
 
+    //Initialisation à partir d'un URI auteur
     $('#btn').click(function() {
         $("#dOeuvres").html("");
         $(".card").css('opacity', '0');
@@ -53,7 +64,7 @@ $(function() {
             }).strength(2));
 
         var uri = $('#uri').val();
-        sparqlData(uri);
+        sparqlData(uri); //=> envoi de la requête initiale
     });
     $('#uri').keydown(function(e) { //Appuie sur entrée => click
         if (e.keyCode == 13) {
@@ -61,20 +72,8 @@ $(function() {
         }
     });
 
-    //Zoom
-    var zoom = d3.zoom()
-        .scaleExtent([0.8 / 2, 4])
-        .on("zoom", zoomed);
 
-    svg.call(zoom);
-
-    function zoomed() {
-        gLinks.attr("transform", d3.event.transform);
-        gNodes.attr("transform", d3.event.transform);
-    }
-
-
-
+    //Requêtage initial "uri" est l'uri d'un auteur
     function sparqlData(uri) {
         //http://data.bnf.fr/ark:/12148/cb11907966z Hugo
         //http://data.bnf.fr/ark:/12148/cb14793455w Giuliani
@@ -88,7 +87,7 @@ $(function() {
         //Requête SPARQL
         var req = "SELECT DISTINCT ?oeuvre ?titre ?nom ?resum (SAMPLE(?depic) as ?fdepic) (SAMPLE(?wDepic) as ?wdepic) WHERE {<" + uri + "> foaf:focus ?person; skos:prefLabel ?nom . ?oeuvre dcterms:creator ?person; rdfs:label ?titre . OPTIONAL { ?oeuvre foaf:depiction ?wDepic. } OPTIONAL { ?person frad:biographicalInformation ?resum.} OPTIONAL { ?person foaf:depiction ?depic. }} ORDER BY RAND() LIMIT 100";
 
-        //fetch databnf sparql
+        //fetch databnf sparql  => ne fonctionne pas sous IE et Edge
         var url = new URL(endpoint),
             params = { queryLn: 'SPARQL', output: 'json', query: prefixes + req, limit: 'none', infer: 'true', Accept: 'application/sparql-results+json' };
         Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
@@ -136,6 +135,20 @@ $(function() {
             });
             $(".card-oeuvre").wrapAll("<div class='card-columns d-inline-block'></div>");
 
+            // Click sur "card" oeuvre => dispatch click sur node correspondant
+            d3.select('body')
+                .selectAll('.card-oeuvre')
+                .on("click", function() {
+                    var luri = this.dataset.uri;
+                    $('html, body').animate({ scrollTop: 0 }, 200);
+                    var leNode = d3.selectAll('circle').filter(function(n) { //Le node correspondant à l'oeuvre
+                        return n.uri === luri;
+                    });
+                    leNode.dispatch('click');
+                    // PROBLEME à investiguer
+                    // dispatch ne rafraichit le graphe que partiellement lors des appels suivants
+                });
+
             renduGraph(0);
 
         } else { //S'il n'y a pas de résultats
@@ -144,24 +157,25 @@ $(function() {
         }
     }
 
-    function reqManifs(uri) {
+    function reqManifs(uri) { //récupération des manifestations liées à une oeuvre
         //point de terminaison
         var endpoint = "http://data.bnf.fr/sparql";
         p = "PREFIX rdarelationships: <http://rdvocab.info/RDARelationshipsWEMI/> PREFIX dcterms: <http://purl.org/dc/terms/> PREFIX bnf-onto: <http://data.bnf.fr/ontology/bnf-onto/>";
         //Requête SPARQL
         r = "SELECT DISTINCT ?manif ?titre ?isJeune ?desc ?pub ?note ?repro WHERE{ ?manif rdarelationships:workManifested <" + uri + ">; dcterms:title ?titre; dcterms:description ?desc; dcterms:publisher ?pub; <http://rdvocab.info/Elements/note> ?note. OPTIONAL{ ?manif bnf-onto:ouvrageJeunesse ?isJeune.} OPTIONAL{ ?manif <http://rdvocab.info/RDARelationshipsWEMI/electronicReproduction> ?repro.} }";
 
-        //fetch databnf sparql
+        //fetch databnf sparql  => ne fonctionne pas sous IE et Edge
         var url = new URL(endpoint),
             params = { queryLn: 'SPARQL', output: 'json', query: p + r, limit: 'none', infer: 'true', Accept: 'application/sparql-results+json' };
         Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
-        //Envoi de la requête (asynchrone avec promesse) => ne fonctionne pas sous IE et Edge
+        //Envoi de la requête (asynchrone avec promesse)
         fetch(url)
             .then(reponse => reponse.json())
-            .then(data => update(uri, data, false))
+            .then(data => update(uri, data, false)) //appel pour mettre le graphe à jour
             .catch(err => console.log(err));
     }
 
+    //fonction update => récupération et affichage des manifestations
     function update(uri, data, isClicked) {
         $("#manifsModalBody").html("");
         if ((data.results && data.results.bindings.length) && !isClicked) {
@@ -178,14 +192,14 @@ $(function() {
                 nodes: nodes,
                 links: links
             };
-            setTimeout(function() {
+            renduGraph(1); //Appel de la fonction de rendu du graphe
+            setTimeout(function() { //Fenêtre modale après 1200ms 
                 $(".card-manif").wrapAll("<div class='card-columns d-inline-block'></div>");
                 $("#manifsModalTitle").html("Manifestations liées à <h1><cite><strong>" + oeuvreEnCours + "</strong></cite></h1>" + data.results.bindings.length + " documents").css('border', '5px solid ' + coulOeuvreEnCours).css('color', '#141414').css('padding', '10px 20px');
                 $('#manifsModal').modal('show');
             }, 1200);
-            renduGraph(1);
-        } else if (isClicked) {
-            lesManifs = data.filter(function(m) {
+        } else if (isClicked) { //Si la requête ne contient aucun nouveau noeud
+            lesManifs = data.filter(function(m) { //data contient les noeuds
                 return m.uriOeuvre === uri;
             });
             $.each(lesManifs, function(i, m) {
@@ -194,7 +208,6 @@ $(function() {
                 var stringRepro = isRepro ? "<a href='" + m.uri + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Accéder au document numérisé</a>" : "<a href='" + m.uri + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Accéder à la ressource</a>";
                 $("#manifsModalBody").append("<div class='card card-manif d-inline-block text-white' data-uri='" + m.uri + "' style='max-width:200px; background-color: " + coulOeuvreEnCours + "; margin:10px;'><img class='card-img-top img-rounded' src=" + imgCard + " alt='illustration manifestation'><div class='card-body'><h6 class='card-title'>" + m.titre + "</h6><p class='card-text'>" + m.desc + " - " + m.pub + "</p>" + stringRepro + "</div></div>");
             });
-
             $(".card-manif").wrapAll("<div class='card-columns d-inline-block'></div>");
             $("#manifsModalTitle").html("Manifestations liées à <h1><cite><strong>" + oeuvreEnCours + "</strong></cite></h1>" + lesManifs.length + " documents").css('border', '5px solid ' + coulOeuvreEnCours).css('color', '#141414').css('padding', '10px 20px');
             $('#manifsModal').modal('show');
@@ -202,11 +215,12 @@ $(function() {
     }
 
 
+    //rendu du graphe et événements associés
     function renduGraph(indexRequete) {
         //liens
         var link = gLinks
-            .selectAll("line")
             .attr("class", "link")
+            .selectAll("line")
             .data(dataObj.links);
         var linkEnter = link.enter().append("line")
             .attr("stroke-width", 1)
@@ -238,7 +252,7 @@ $(function() {
                     oeuvreEnCours = d.titre;
                     reqManifs(d.uri); //envoi requête manifestations
                     d.clicked = true;
-                } else {
+                } else { //Si l'oeuvre a déjà été traitée, on passe le tableau de noeuds en data
                     coulOeuvreEnCours = color(d.titre);
                     oeuvreEnCours = d.titre;
                     update(d.uri, nodes, true);
@@ -252,19 +266,6 @@ $(function() {
                 var title = indexRequete === 0 ? d.titre : d.titre + " - " + d.desc + " - " + d.note + " - " + d.pub;
                 return title;
             });
-
-        var cardOeuvres = d3.select('body').selectAll('.card-oeuvre');
-
-        cardOeuvres.on("click", function() {
-            var luri = this.dataset.uri;
-            var leNode = node.filter(function(n) {
-                return n.uri === luri;
-            });
-            $('html, body').animate({ scrollTop: 0 }, 200);
-            setTimeout(function() {
-                leNode.dispatch('click');
-            }, 300);
-        });
 
         node = nodeEnter.merge(node);
 
