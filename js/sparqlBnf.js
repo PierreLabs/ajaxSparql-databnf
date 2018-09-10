@@ -166,7 +166,7 @@ $(function() {
     function reqManifs(uri) { //récupération des manifestations liées à une oeuvre
         //point de terminaison
         var endpoint = "http://data.bnf.fr/sparql";
-        p = "PREFIX rdarelationships: <http://rdvocab.info/RDARelationshipsWEMI/> PREFIX dcterms: <http://purl.org/dc/terms/> PREFIX bnf-onto: <http://data.bnf.fr/ontology/bnf-onto/>";
+        p = "PREFIX rdarelationships: <http://rdvocab.info/RDARelationshipsWEMI/> PREFIX dcterms: <http://purl.org/dc/terms/> PREFIX bnf-onto: <http://data.bnf.fr/ontology/bnf-onto/> PREFIX foaf: <http://xmlns.com/foaf/0.1/>";
         //Requête SPARQL
         r = "SELECT DISTINCT ?manif ?titre ?isJeune ?desc ?pub ?note ?repro WHERE{ ?manif rdarelationships:workManifested <" + uri + ">; dcterms:title ?titre; dcterms:description ?desc; dcterms:publisher ?pub; <http://rdvocab.info/Elements/note> ?note. OPTIONAL{ ?manif bnf-onto:ouvrageJeunesse ?isJeune.} OPTIONAL{ ?manif <http://rdvocab.info/RDARelationshipsWEMI/electronicReproduction> ?repro.} }";
 
@@ -186,12 +186,12 @@ $(function() {
         $("#manifsModalBody").html("");
         if ((data.results && data.results.bindings.length) && !isClicked) {
             $.each(data.results.bindings, function(i, manif) {
-                var lien = typeof manif.repro === "undefined" ? manif.manif.value : manif.repro.value;
+                var isRepro = typeof manif.repro !== "undefined";
+                var lien = isRepro ? manif.repro.value : manif.manif.value;
                 nodes.push({ titre: manif.titre.value, pub: manif.pub.value, desc: manif.desc.value, note: manif.note.value, uri: lien, uriOeuvre: uri, isJeune: manif.isJeune, clicked: false, group: "manif" });
                 links.push({ source: typeof manif.repro === "undefined" ? manif.manif.value : manif.repro.value, target: uri, value: "workManifested" });
                 var imgCard = !manif.isJeune ? '/img/manif.png' : '/img/manifJ.png';
-                var isRepro = typeof manif.repro !== "undefined";
-                var stringRepro = isRepro ? "<a href='" + manif.repro.value + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Accéder au document numérisé</a>" : "<a href='" + lien + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Accéder à la ressource</a>";
+                var stringRepro = isRepro ? "<a href='" + manif.repro.value + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Accéder au document numérisé</a>" : "<a href='" + lien.replace("data.bnf.fr", "catalogue.bnf.fr") + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Voir dans le catalogue</a>";
                 $("#manifsModalBody").append("<div class='card card-manif d-inline-block text-white' data-uri='" + lien + "' style='max-width:200px; background-color: " + coulOeuvreEnCours + "; margin:10px;'><img class='card-img-top img-rounded' src=" + imgCard + " alt='illustration manifestation'><div class='card-body'><h6 class='card-title'>" + manif.titre.value + "</h6><p class='card-text'>" + manif.desc.value + " - " + manif.pub.value + "</p>" + stringRepro + "</div></div>");
             });
             dataObj = {
@@ -211,7 +211,7 @@ $(function() {
             $.each(lesManifs, function(i, m) {
                 var imgCard = !m.isJeune ? '/img/manif.png' : '/img/manifJ.png';
                 var isRepro = m.uri.indexOf('gallica') > -1;
-                var stringRepro = isRepro ? "<a href='" + m.uri + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Accéder au document numérisé</a>" : "<a href='" + m.uri + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Accéder à la ressource</a>";
+                var stringRepro = isRepro ? "<a href='" + m.uri + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Accéder au document numérisé</a>" : "<a href='" + m.uri.replace("data.bnf.fr", "catalogue.bnf.fr") + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Voir dans le catalogue</a>";
                 $("#manifsModalBody").append("<div class='card card-manif d-inline-block text-white' data-uri='" + m.uri + "' style='max-width:200px; background-color: " + coulOeuvreEnCours + "; margin:10px;'><img class='card-img-top img-rounded' src=" + imgCard + " alt='illustration manifestation'><div class='card-body'><h6 class='card-title'>" + m.titre + "</h6><p class='card-text'>" + m.desc + " - " + m.pub + "</p>" + stringRepro + "</div></div>");
             });
             $(".card-manif").wrapAll("<div class='card-columns d-inline-block'></div>");
