@@ -99,7 +99,6 @@ $(function() {
     }
 
     function traitOeuvres(uri, oeuvres) {
-
         if ((oeuvres.results.bindings.length)) { //S'il y a des résultats
             $("#rowErr").remove();
             $.each(oeuvres.results.bindings, function(i, oeuvre) {
@@ -128,12 +127,15 @@ $(function() {
             //Ajout de "cards bootstrap" pour une visualisation sous forme de liste plus traditionnelle
             $.each(dataObj.nodes, function(i, e) { // Itération sur les noeuds
                 if (i > 0) { //Si pas l'auteur
-                    $("#dOeuvres").append("<div class='card card-oeuvre d-inline-block text-white' data-uri='" + e.uri + "' style='max-width:225px; background-color: " + color(e.titre) + ";'><img class='card-img-top img-rounded' src='" + e.depic + "' alt='illustration oeuvre'><div class='card-body'><h5 class='card-title'>" + e.titre + "</h5><p class='card-text'>Une oeuvre de " + dataObj.nodes[0].titre + "</p><a href='" + e.uri + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Accéder à la ressource</a></div></div>");
+                    $("#dOeuvres").append("<div class='card card-oeuvre d-inline-block text-white' data-uri='" + e.uri + "' style='max-width:225px; background-color: " + color(e.titre) + ";'><img class='card-img-top img-rounded' src='" + e.depic + "' alt='illustration oeuvre'><div class='card-body'><h5 class='card-title'>" + e.titre + "</h5><p class='card-text'>Une oeuvre de " + dataObj.nodes[0].titre + "</p><a href='" + e.uri + "' target='_blank' class='btn btn-outline-light btn-sm res-oeuvre' style='white-space: normal;'>Accéder à la ressource</a></div></div>");
                 } else if (i === 0) { //Si auteur
                     $("#cardAuteur").css("background-color", color(e.titre));
                 }
             });
-            $(".card-oeuvre").wrapAll("<div class='card-columns d-inline-block'></div>");
+            $(".card-oeuvre").wrapAll("<div class='card-columns d-inline-block'></div>").css("cursor", "pointer");
+
+            //On accède à la ressource depuis l'oeuvre => pas de propagation des événements (dispatch click)
+            $(".res-oeuvre").click(function(e) { e.stopPropagation(); });
 
             // Click sur "card" oeuvre => dispatch click sur node correspondant
             d3.select('body')
@@ -147,6 +149,9 @@ $(function() {
                     leNode.dispatch('click');
                     // PROBLEME à investiguer
                     // dispatch ne rafraichit le graphe que partiellement lors des appels suivants
+                    //Solution (provisoire ?) => relancer simulation
+                    simulation.alphaTarget(0.05).restart();
+                    setTimeout(function() { simulation.alphaTarget(0); }, 1000);
                 });
 
             renduGraph(0);
@@ -246,16 +251,18 @@ $(function() {
                 .on("start", dragstarted)
                 .on("drag", dragged)
                 .on("end", dragended));
-        nodeEnter.on("click", function(d) {
-                if (!d.clicked) { //L'oeuvre a-t-elle déjà été explorée ?
-                    coulOeuvreEnCours = color(d.titre);
-                    oeuvreEnCours = d.titre;
-                    reqManifs(d.uri); //envoi requête manifestations
-                    d.clicked = true;
-                } else { //Si l'oeuvre a déjà été traitée, on passe le tableau de noeuds en data
-                    coulOeuvreEnCours = color(d.titre);
-                    oeuvreEnCours = d.titre;
-                    update(d.uri, nodes, true);
+        nodeEnter.on("click", function(d, i) {
+                if (i > 0) { //Si pas l'auteur
+                    if (!d.clicked) { //L'oeuvre a-t-elle déjà été explorée ?
+                        coulOeuvreEnCours = color(d.titre); //Récupération de la couleur liée à l'oeuvre dans une variable globale
+                        oeuvreEnCours = d.titre; //Récupération du titre de l'oeuvre dans une variable globale (réutilisation popup)
+                        reqManifs(d.uri); //envoi requête manifestations
+                        d.clicked = true;
+                    } else { //Si l'oeuvre a déjà été traitée, on passe le tableau de noeuds en data
+                        coulOeuvreEnCours = color(d.titre);
+                        oeuvreEnCours = d.titre;
+                        update(d.uri, nodes, true);
+                    }
                 }
             })
             .on("dblclick", function(d) {
@@ -278,16 +285,6 @@ $(function() {
 
         simulation.force("link")
             .links(dataObj.links);
-
-        // function moveto(d) {
-        //     // var dirM = indexRequete === 0 ? "M" + d.target.x + "," + d.target.y : "M" + d.source.x + "," + d.source.y;
-        //     return "M" + d.target.x + "," + d.target.y;
-        // }
-
-        // function lineto(d) {
-        //     // var dirM = indexRequete === 0 ? "L" + d.source.x + "," + d.source.y : "L" + d.target.x + "," + d.target.y;
-        //     return "L" + d.source.x + "," + d.source.y;
-        // }
 
         function dragstarted(d) {
             if (!d3.event.active) simulation.alphaTarget(0.3).restart();
@@ -329,19 +326,6 @@ $(function() {
                 .attr("cy", function(d) {
                     return d.y;
                 });
-
-            // pathT
-            //     .attr("d",
-            //         function(d) {
-            //             return moveto(d) + lineto(d);
-            //         });
         }
     }
-
-    // //Fonction pour supprimer les doublons dans le tableau des noeuds
-    // function supprDoublons(myArr, prop) {
-    //     return myArr.filter((obj, pos, arr) => {
-    //         return arr.map(mapObj => mapObj[prop]).indexOf(obj[prop]) === pos;
-    //     });
-    // }
 });
