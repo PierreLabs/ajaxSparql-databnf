@@ -146,12 +146,13 @@ $(function() {
                     var leNode = d3.selectAll('circle').filter(function(n) { //Le node correspondant à l'oeuvre
                         return n.uri === luri;
                     });
-                    leNode.dispatch('click');
-                    // PROBLEME à investiguer
-                    // dispatch ne rafraichit le graphe que partiellement lors des appels suivants
-                    //Solution (provisoire ?) => relancer simulation
-                    simulation.alphaTarget(0.05).restart();
-                    setTimeout(function() { simulation.alphaTarget(0); }, 1000);
+                    leNode.dispatch('click', function() {
+                        // PROBLEME à investiguer
+                        // dispatch ne rafraichit le graphe que partiellement lors des appels suivants
+                        //Solution (provisoire ?) => relancer simulation
+                        simulation.alphaTarget(0.05).restart();
+                        setTimeout(function() { simulation.alphaTarget(0); }, 1000);
+                    });
                 });
 
             renduGraph(0);
