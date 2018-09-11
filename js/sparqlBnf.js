@@ -111,8 +111,11 @@ $(function() {
                     //depiction auteur + abstract
                     $("#depic").attr('src', typeof oeuvre.fdepic !== "undefined" ? oeuvre.fdepic.value : "#");
                     $(".card-title").html(oeuvre.nom.value);
-                    $(".card-text").html(oeuvre.resum.value);
-                    $(".card-text").append("<br><a class='btn btn-outline-light mt-3' target='_blank' href='" + oeuvre.wikidata.value + "'>Voir sur wikidata</a>");
+                    if (oeuvre.resum) //biographicalInformation?
+                        $(".card-text").html(oeuvre.resum.value);
+                    else $(".card-text").html("");
+                    if (oeuvre.wikidata)
+                        $(".card-text").append("<br><a class='btn btn-outline-light mt-3' target='_blank' href='" + oeuvre.wikidata.value + "'>Voir sur wikidata</a>");
                     $(".card").css('opacity', '1');
 
                     //nodes index 0 = auteur
