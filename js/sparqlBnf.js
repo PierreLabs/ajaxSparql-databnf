@@ -63,7 +63,7 @@ $(function() {
                 return d.value === "Creator" ? 30 : 0.2;
             }).strength(2));
 
-        var uri = $('#uri').val();
+        var uri = $('#uri').val().trim();
         sparqlData(uri); //=> envoi de la requête initiale
     });
     $('#uri').keydown(function(e) { //Appuie sur entrée => click
@@ -107,7 +107,7 @@ $(function() {
                     $("#depic").attr('src', typeof oeuvre.fdepic !== "undefined" ? oeuvre.fdepic.value : "#");
                     $(".card-title").html(oeuvre.nom.value);
                     $(".card-text").html(oeuvre.resum.value);
-                    $(".card-text").append("<a class='btn btn-outline-light mt-3' target='_blank' href='" + oeuvre.wikidata.value + "'>Voir sur wikidata</a>");
+                    $(".card-text").append("<br><a class='btn btn-outline-light mt-3' target='_blank' href='" + oeuvre.wikidata.value + "'>Voir sur wikidata</a>");
                     $(".card").css('opacity', '1');
 
                     //nodes index 0 = auteur
@@ -128,7 +128,7 @@ $(function() {
             //Ajout de "cards bootstrap" pour une visualisation sous forme de liste plus traditionnelle
             $.each(dataObj.nodes, function(i, e) { // Itération sur les noeuds
                 if (i > 0) { //Si pas l'auteur
-                    $("#dOeuvres").append("<div class='card card-oeuvre d-inline-block text-white' data-uri='" + e.uri + "' style='max-width:225px; background-color: " + color(e.titre) + ";'><img class='card-img-top img-rounded' src='" + e.depic + "' alt='illustration oeuvre'><div class='card-body'><h5 class='card-title'>" + e.titre + "</h5><p class='card-text'>Une oeuvre de " + dataObj.nodes[0].titre + "</p><a href='" + e.uri + "' target='_blank' class='btn btn-outline-light btn-sm res-oeuvre' style='white-space: normal;'>Accéder à la ressource</a></div></div>");
+                    $("#dOeuvres").append("<div class='card card-oeuvre d-inline-block text-white' data-uri='" + e.uri + "' style='max-width:225px; background-color: " + color(e.titre) + ";'><img class='card-img-top img-rounded' src='" + e.depic + "' onerror='this.src=\"/img/oeuvre.png\"' alt='illustration oeuvre'><div class='card-body'><h5 class='card-title'>" + e.titre + "</h5><p class='card-text'>Une oeuvre de " + dataObj.nodes[0].titre + "</p><a href='" + e.uri + "' target='_blank' class='btn btn-outline-light btn-sm res-oeuvre' style='white-space: normal;'>Accéder à la ressource</a></div></div>");
                 } else if (i === 0) { //Si auteur
                     $("#cardAuteur").css("background-color", color(e.titre));
                 }
