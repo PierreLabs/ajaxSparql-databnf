@@ -85,7 +85,9 @@ $(function() {
         //note: <http://rdvocab.info/ElementsGr2/> est obsolète (FRAD) mais toujours utilisé dans le modèle de données de data.bnf.fr
         var prefixes = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX foaf: <http://xmlns.com/foaf/0.1/> PREFIX dcterms: <http://purl.org/dc/terms/> PREFIX frad: <http://rdvocab.info/ElementsGr2/>";
         //Requête SPARQL
-        var req = "SELECT DISTINCT ?oeuvre ?titre ?nom ?resum (SAMPLE(?depic) as ?fdepic) (SAMPLE(?wDepic) as ?wdepic) WHERE {<" + uri + "> foaf:focus ?person; skos:prefLabel ?nom . ?oeuvre dcterms:creator ?person; rdfs:label ?titre . OPTIONAL { ?oeuvre foaf:depiction ?wDepic. } OPTIONAL { ?person frad:biographicalInformation ?resum.} OPTIONAL { ?person foaf:depiction ?depic. }} ORDER BY RAND() LIMIT 100";
+        var req = "SELECT DISTINCT ?oeuvre ?titre ?nom ?resum (SAMPLE(?depic) as ?fdepic) (SAMPLE(?wDepic) as ?wdepic) ?wikidata WHERE {<" + uri + "> foaf:focus ?person; skos:prefLabel ?nom; skos:exactMatch ?wikidata . ?oeuvre dcterms:creator ?person; rdfs:label ?titre . OPTIONAL { ?oeuvre foaf:depiction ?wDepic. } OPTIONAL { ?person frad:biographicalInformation ?resum.} OPTIONAL { ?person foaf:depiction ?depic. } FILTER (regex(?wikidata, \"^http://wikidata.org/\", \"i\"))} ORDER BY RAND() LIMIT 100";
+
+        console.log(req);
 
         //fetch databnf sparql  => ne fonctionne pas sous IE et Edge
         var url = new URL(endpoint),
@@ -107,6 +109,7 @@ $(function() {
                     $("#depic").attr('src', typeof oeuvre.fdepic !== "undefined" ? oeuvre.fdepic.value : "#");
                     $(".card-title").html(oeuvre.nom.value);
                     $(".card-text").html(oeuvre.resum.value);
+                    $(".card-text").append("<a class='btn btn-outline-light mt-3' target='_blank' href='" + oeuvre.wikidata.value + "'>Voir sur wikidata</a>");
                     $(".card").css('opacity', '1');
 
                     //nodes index 0 = auteur
