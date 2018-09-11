@@ -23,7 +23,7 @@ $(function() {
         .style("font-family", "Arial")
         .style("fill", "#6633cc")
         .attr("text-anchor", "middle")
-        .text("Renseigner un URI ci-dessous puis cliquer sur envoyer.");
+        .text("Renseigner un URI d'auteur ci-dessous puis cliquer sur envoyer.");
 
     //Initialisation variables globales
     var gNodes, //Groupe des noeuds
@@ -169,6 +169,7 @@ $(function() {
         } else { //S'il n'y a pas de résultats
             $("#btn").after("<div id='rowErr' class='alert alert-danger col-6 top-marge' role='alert'>Aucun résultat...</div>");
             $("#rowErr").css("opacity", "1");
+            $('#btn').attr("disabled", false);
         }
     }
 
