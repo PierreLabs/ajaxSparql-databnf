@@ -87,8 +87,6 @@ $(function() {
         //Requête SPARQL
         var req = "SELECT DISTINCT ?oeuvre ?titre ?nom ?resum (SAMPLE(?depic) as ?fdepic) (SAMPLE(?wDepic) as ?wdepic) ?wikidata WHERE {<" + uri + "> foaf:focus ?person; skos:prefLabel ?nom; skos:exactMatch ?wikidata . ?oeuvre dcterms:creator ?person; rdfs:label ?titre . OPTIONAL { ?oeuvre foaf:depiction ?wDepic. } OPTIONAL { ?person frad:biographicalInformation ?resum.} OPTIONAL { ?person foaf:depiction ?depic. } FILTER (regex(?wikidata, \"^http://wikidata.org/\", \"i\"))} ORDER BY RAND() LIMIT 100";
 
-        console.log(req);
-
         //fetch databnf sparql  => ne fonctionne pas sous IE et Edge
         var url = new URL(endpoint),
             params = { queryLn: 'SPARQL', output: 'json', query: prefixes + req, limit: 'none', infer: 'true', Accept: 'application/sparql-results+json' };
@@ -104,7 +102,7 @@ $(function() {
         if ((oeuvres.results.bindings.length)) { //S'il y a des résultats
             $("#rowErr").remove();
             $.each(oeuvres.results.bindings, function(i, oeuvre) {
-                if (i === 0) {
+                if (i === 0) { //i === 0 => auteur
                     //depiction auteur + abstract
                     $("#depic").attr('src', typeof oeuvre.fdepic !== "undefined" ? oeuvre.fdepic.value : "#");
                     $(".card-title").html(oeuvre.nom.value);
@@ -115,7 +113,7 @@ $(function() {
                     //nodes index 0 = auteur
                     nodes.push({ titre: oeuvre.nom.value, depic: typeof oeuvre.fdepic !== "undefined" ? oeuvre.fdepic.value : "#", uri: uri, group: "auteur" });
                     nodes.push({ titre: oeuvre.titre.value, depic: typeof oeuvre.wdepic !== "undefined" ? oeuvre.wdepic.value : "/img/oeuvre.png", uri: oeuvre.oeuvre.value, dateEd: "", group: "oeuvre" });
-                } else {
+                } else { // Oeuvres
                     nodes.push({ titre: oeuvre.titre.value, depic: typeof oeuvre.wdepic !== "undefined" ? oeuvre.wdepic.value : "/img/oeuvre.png", uri: oeuvre.oeuvre.value, dateEd: "", group: "oeuvre" });
                 }
                 links.push({ source: uri, target: oeuvre.oeuvre.value, value: "Creator" });
