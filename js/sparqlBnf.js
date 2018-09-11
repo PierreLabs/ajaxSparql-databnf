@@ -25,17 +25,16 @@ $(function() {
         .attr("text-anchor", "middle")
         .text("Renseigner un URI ci-dessous puis cliquer sur envoyer.");
 
-    var gLinks,
-        gNodes,
-        simulation,
-        lesManifs,
+    //Initialisation variables globales
+    var gNodes, //Groupe des noeuds
+        gLinks, //Groupe des liens (arcs)
+        simulation, //Objet "forceSimulation" gérant les forces à l'oeuvre dans le graphe
+        lesManifs, //tableau temporaire des manifestation liées à l'oeuvre 'active'
         oeuvreEnCours, //Suivi de l'oeuvre en cours d'exploration...
-        coulOeuvreEnCours; //...Et la couleur correspondante
-
-
-    var nodes = []; //Les noeuds
-    var links = []; //Les arcs
-    var dataObj = {}; //Objet des tableaux noeuds/liens (graphe "théorique")
+        coulOeuvreEnCours, //...Et la couleur correspondante
+        nodes = [], //Les noeuds
+        links = [], //Les arcs
+        dataObj = {}; //Objet des tableaux noeuds/liens (graphe "théorique")
 
 
     var tabcouleurs = ["#3366cc", "#dc3912", "#ff9900", "#109618", "#d58fd5", "#0099c6", "#dd4477", "#66aa00", "#b82e2e", "#316395", "#6873c6", "#22aa99", "#aaaa11", "#6633cc", "#e67300", "#8b0707", "#651067", "#329262", "#5574a6", "#3b3eac"];
@@ -43,6 +42,10 @@ $(function() {
 
     //Initialisation à partir d'un URI auteur
     $('#btn').click(function() {
+        //Désactivation bouton pour éviter double requêtage (réactivation dans la fonction renduGraph())
+        $(this).attr("disabled", true);
+
+        //Réinitialisation contenu + variables + simulation.
         $("#dOeuvres").html("");
         $(".card").css('opacity', '0');
         $("#rowErr").css("opacity", "0");
@@ -63,8 +66,9 @@ $(function() {
                 return d.value === "Creator" ? 30 : 0.2;
             }).strength(2));
 
+        //=> envoi de la requête initiale
         var uri = $('#uri').val().trim();
-        sparqlData(uri); //=> envoi de la requête initiale
+        sparqlData(uri);
     });
     $('#uri').keydown(function(e) { //Appuie sur entrée => click
         if (e.keyCode == 13) {
@@ -75,6 +79,7 @@ $(function() {
 
     //Requêtage initial "uri" est l'uri d'un auteur
     function sparqlData(uri) {
+        //Exemples
         //http://data.bnf.fr/ark:/12148/cb11907966z Hugo
         //http://data.bnf.fr/ark:/12148/cb14793455w Giuliani
         //http://data.bnf.fr/ark:/12148/cb118900414 Balzac
@@ -112,9 +117,9 @@ $(function() {
 
                     //nodes index 0 = auteur
                     nodes.push({ titre: oeuvre.nom.value, depic: typeof oeuvre.fdepic !== "undefined" ? oeuvre.fdepic.value : "#", uri: uri, group: "auteur" });
-                    nodes.push({ titre: oeuvre.titre.value, depic: typeof oeuvre.wdepic !== "undefined" ? oeuvre.wdepic.value : "/img/oeuvre.png", uri: oeuvre.oeuvre.value, dateEd: "", group: "oeuvre" });
+                    nodes.push({ titre: oeuvre.titre.value, depic: typeof oeuvre.wdepic !== "undefined" ? oeuvre.wdepic.value : "img/oeuvre.png", uri: oeuvre.oeuvre.value, dateEd: "", group: "oeuvre" });
                 } else { // Oeuvres
-                    nodes.push({ titre: oeuvre.titre.value, depic: typeof oeuvre.wdepic !== "undefined" ? oeuvre.wdepic.value : "/img/oeuvre.png", uri: oeuvre.oeuvre.value, dateEd: "", group: "oeuvre" });
+                    nodes.push({ titre: oeuvre.titre.value, depic: typeof oeuvre.wdepic !== "undefined" ? oeuvre.wdepic.value : "img/oeuvre.png", uri: oeuvre.oeuvre.value, dateEd: "", group: "oeuvre" });
                 }
                 links.push({ source: uri, target: oeuvre.oeuvre.value, value: "Creator" });
             });
@@ -128,7 +133,7 @@ $(function() {
             //Ajout de "cards bootstrap" pour une visualisation sous forme de liste plus traditionnelle
             $.each(dataObj.nodes, function(i, e) { // Itération sur les noeuds
                 if (i > 0) { //Si pas l'auteur
-                    $("#dOeuvres").append("<div class='card card-oeuvre d-inline-block text-white' data-uri='" + e.uri + "' style='max-width:225px; background-color: " + color(e.titre) + ";'><img class='card-img-top img-rounded' src='" + e.depic + "' onerror='this.src=\"/img/oeuvre.png\"' alt='illustration oeuvre'><div class='card-body'><h5 class='card-title'>" + e.titre + "</h5><p class='card-text'>Une oeuvre de " + dataObj.nodes[0].titre + "</p><a href='" + e.uri + "' target='_blank' class='btn btn-outline-light btn-sm res-oeuvre' style='white-space: normal;'>Accéder à la ressource</a></div></div>");
+                    $("#dOeuvres").append("<div class='card card-oeuvre d-inline-block text-white' data-uri='" + e.uri + "' style='max-width:225px; background-color: " + color(e.titre) + ";'><img class='card-img-top img-rounded' src='" + e.depic + "' onerror='this.src=\"img/oeuvre.png\"' alt='illustration oeuvre'><div class='card-body'><h5 class='card-title'>" + e.titre + "</h5><p class='card-text'>Une oeuvre de " + dataObj.nodes[0].titre + "</p><a href='" + e.uri + "' target='_blank' class='btn btn-outline-light btn-sm res-oeuvre' style='white-space: normal;'>Accéder à la ressource</a></div></div>");
                 } else if (i === 0) { //Si auteur
                     $("#cardAuteur").css("background-color", color(e.titre));
                 }
@@ -191,9 +196,9 @@ $(function() {
                 var lien = isRepro ? manif.repro.value : manif.manif.value;
                 nodes.push({ titre: manif.titre.value, pub: manif.pub.value, desc: manif.desc.value, note: manif.note.value, uri: lien, uriOeuvre: uri, isJeune: manif.isJeune, clicked: false, group: "manif" });
                 links.push({ source: typeof manif.repro === "undefined" ? manif.manif.value : manif.repro.value, target: uri, value: "workManifested" });
-                var imgCard = isRepro ? lien + '.thumbnail' : !manif.isJeune ? '/img/manif.png' : '/img/manifJ.png';
+                var imgCard = isRepro ? lien + '.thumbnail' : !manif.isJeune ? 'img/manif.png' : 'img/manifJ.png';
                 var stringRepro = isRepro ? "<a href='" + manif.repro.value + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Accéder au document numérisé</a>" : "<a href='" + lien.replace("data.bnf.fr", "catalogue.bnf.fr") + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Voir dans le catalogue</a>";
-                $("#manifsModalBody").append("<div class='card card-manif d-inline-block text-white' data-uri='" + lien + "' style='max-width:200px; background-color: " + coulOeuvreEnCours + "; margin:10px;'><img class='card-img-top img-rounded' src=" + imgCard + " alt='illustration manifestation'><div class='card-body'><h6 class='card-title'>" + manif.titre.value + "</h6><p class='card-text'>" + manif.desc.value + " - " + manif.pub.value + "</p>" + stringRepro + "</div></div>");
+                $("#manifsModalBody").append("<div class='card card-manif d-inline-block text-white' data-uri='" + lien + "' style='max-width:200px; background-color: " + coulOeuvreEnCours + "; margin:10px;'><img class='card-img-top img-rounded' src=" + imgCard + " onerror='this.src=\"img/manif.png\"' alt='illustration manifestation'><div class='card-body'><h6 class='card-title'>" + manif.titre.value + "</h6><p class='card-text'>" + manif.desc.value + " - " + manif.pub.value + "</p>" + stringRepro + "</div></div>");
             });
             dataObj = {
                 nodes: nodes,
@@ -211,9 +216,9 @@ $(function() {
             });
             $.each(lesManifs, function(i, m) {
                 var isRepro = m.uri.indexOf('gallica') > -1;
-                var imgCard = isRepro ? m.uri + '.thumbnail' : !m.isJeune ? '/img/manif.png' : '/img/manifJ.png';
+                var imgCard = isRepro ? m.uri + '.thumbnail' : !m.isJeune ? 'img/manif.png' : 'img/manifJ.png';
                 var stringRepro = isRepro ? "<a href='" + m.uri + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Accéder au document numérisé</a>" : "<a href='" + m.uri.replace("data.bnf.fr", "catalogue.bnf.fr") + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Voir dans le catalogue</a>";
-                $("#manifsModalBody").append("<div class='card card-manif d-inline-block text-white' data-uri='" + m.uri + "' style='max-width:200px; background-color: " + coulOeuvreEnCours + "; margin:10px;'><img class='card-img-top img-rounded' src=" + imgCard + " alt='illustration manifestation'><div class='card-body'><h6 class='card-title'>" + m.titre + "</h6><p class='card-text'>" + m.desc + " - " + m.pub + "</p>" + stringRepro + "</div></div>");
+                $("#manifsModalBody").append("<div class='card card-manif d-inline-block text-white' data-uri='" + m.uri + "' style='max-width:200px; background-color: " + coulOeuvreEnCours + "; margin:10px;'><img class='card-img-top img-rounded' src=" + imgCard + " onerror='this.src=\"img/manif.png\"' alt='illustration manifestation'><div class='card-body'><h6 class='card-title'>" + m.titre + "</h6><p class='card-text'>" + m.desc + " - " + m.pub + "</p>" + stringRepro + "</div></div>");
             });
             $(".card-manif").wrapAll("<div class='card-columns d-inline-block'></div>");
             $("#manifsModalTitle").html("Manifestations liées à <h1><cite><strong>" + oeuvreEnCours + "</strong></cite></h1>" + lesManifs.length + " documents").css('border', '5px solid ' + coulOeuvreEnCours).css('color', '#141414').css('padding', '10px 20px');
@@ -224,6 +229,7 @@ $(function() {
 
     //rendu du graphe et événements associés
     function renduGraph(indexRequete) {
+        $('#btn').attr("disabled", false);
         //liens
         var link = gLinks
             .attr("class", "link")
