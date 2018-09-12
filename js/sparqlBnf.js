@@ -34,7 +34,8 @@ $(function() {
         coulOeuvreEnCours, //...Et la couleur correspondante
         nodes = [], //Les noeuds
         links = [], //Les arcs
-        dataObj = {}; //Objet des tableaux noeuds/liens (graphe "théorique")
+        dataObj = {}, //Objet des tableaux noeuds/liens (graphe "théorique")                
+        endpoint = "http://data.bnf.fr/sparql"; //point de terminaison
 
 
     var tabcouleurs = ["#3366cc", "#dc3912", "#ff9900", "#109618", "#d58fd5", "#0099c6", "#dd4477", "#66aa00", "#b82e2e", "#316395", "#6873c6", "#22aa99", "#aaaa11", "#6633cc", "#e67300", "#8b0707", "#651067", "#329262", "#5574a6", "#3b3eac"];
@@ -84,8 +85,6 @@ $(function() {
         //http://data.bnf.fr/ark:/12148/cb14793455w Giuliani
         //http://data.bnf.fr/ark:/12148/cb118900414 Balzac
 
-        //point de terminaison
-        var endpoint = "http://data.bnf.fr/sparql";
         //Préfixes
         //note: <http://rdvocab.info/ElementsGr2/> est obsolète (FRAD) mais toujours utilisé dans le modèle de données de data.bnf.fr
         var prefixes = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX foaf: <http://xmlns.com/foaf/0.1/> PREFIX dcterms: <http://purl.org/dc/terms/> PREFIX frad: <http://rdvocab.info/ElementsGr2/>";
@@ -99,7 +98,7 @@ $(function() {
         //Envoi de la requête (asynchrone avec promesse)
         fetch(url)
             .then(reponse => reponse.json())
-            .then(data => traitOeuvres(uri, data))
+            .then(data => traitOeuvres(uri, data)) //gestion auteur + oeuvres
             .catch(err => console.log(err));
     }
 
@@ -164,7 +163,7 @@ $(function() {
                     });
                 });
 
-            renduGraph(0);
+            renduGraph(0); //Appel de la fonction de rendu du graphe (auteur + oeuvres)
 
         } else { //S'il n'y a pas de résultats
             $("#btn").after("<div id='rowErr' class='alert alert-danger col-6 top-marge' role='alert'>Aucun résultat...</div>");
@@ -174,8 +173,6 @@ $(function() {
     }
 
     function reqManifs(uri) { //récupération des manifestations liées à une oeuvre
-        //point de terminaison
-        var endpoint = "http://data.bnf.fr/sparql";
         p = "PREFIX rdarelationships: <http://rdvocab.info/RDARelationshipsWEMI/> PREFIX dcterms: <http://purl.org/dc/terms/> PREFIX bnf-onto: <http://data.bnf.fr/ontology/bnf-onto/> PREFIX foaf: <http://xmlns.com/foaf/0.1/>";
         //Requête SPARQL
         r = "SELECT DISTINCT ?manif ?titre ?isJeune ?desc ?pub ?note ?repro WHERE{ ?manif rdarelationships:workManifested <" + uri + ">; dcterms:title ?titre; dcterms:description ?desc; dcterms:publisher ?pub; <http://rdvocab.info/Elements/note> ?note. OPTIONAL{ ?manif bnf-onto:ouvrageJeunesse ?isJeune.} OPTIONAL{ ?manif <http://rdvocab.info/RDARelationshipsWEMI/electronicReproduction> ?repro.} }";
@@ -187,7 +184,7 @@ $(function() {
         //Envoi de la requête (asynchrone avec promesse)
         fetch(url)
             .then(reponse => reponse.json())
-            .then(data => update(uri, data, false)) //appel pour mettre le graphe à jour
+            .then(data => update(uri, data, false)) //Mise à jour du graphe avec les manifestations
             .catch(err => console.log(err));
     }
 
@@ -208,13 +205,13 @@ $(function() {
                 nodes: nodes,
                 links: links
             };
-            renduGraph(1); //Appel de la fonction de rendu du graphe
+            renduGraph(1); //Appel de la fonction de rendu du graphe (manifestations)
             setTimeout(function() { //Fenêtre modale après 1200ms 
                 $(".card-manif").wrapAll("<div class='card-columns d-inline-block'></div>");
                 $("#manifsModalTitle").html("Manifestations liées à <h1><cite><strong>" + oeuvreEnCours + "</strong></cite></h1>" + data.results.bindings.length + " documents").css('border', '5px solid ' + coulOeuvreEnCours).css('color', '#141414').css('padding', '10px 20px');
                 $('#manifsModal').modal('show');
             }, 1200);
-        } else if (isClicked) { //Si la requête ne contient aucun nouveau noeud
+        } else if (isClicked) { //Si la requête ne contient aucun nouveau noeud pas de maj du graphe
             lesManifs = data.filter(function(m) { //data contient les noeuds
                 return m.uriOeuvre === uri;
             });
@@ -232,7 +229,7 @@ $(function() {
 
 
     //rendu du graphe et événements associés
-    function renduGraph(indexRequete) {
+    function renduGraph(indexRequete) { //indexRequete = 0 : oeuvres + auteur, indexRequete=1 : manifestations
         $('#btn').attr("disabled", false);
         //liens
         var link = gLinks
