@@ -43,33 +43,42 @@ $(function() {
 
     //Initialisation à partir d'un URI auteur
     $('#btn').click(function() {
-        //Désactivation bouton pour éviter double requêtage (réactivation dans la fonction renduGraph())
-        $(this).attr("disabled", true);
+        //La méthode fetch ne fonctionnant pas (encore) sous IE et Edge, check si chrome ou firefox sont utilisés...
+        var isChrome = !!window.chrome && !!window.chrome.webstore;
+        var isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+        if (isChrome || isFirefox) { //...Si c'est le cas
+            //Désactivation bouton pour éviter double requêtage (réactivation dans la fonction renduGraph())
+            $(this).attr("disabled", true);
 
-        //Réinitialisation contenu + variables + simulation.
-        $("#dOeuvres").html("");
-        $(".card").css('opacity', '0');
-        $("#rowErr").css("opacity", "0");
-        nodes = []; //Les noeuds
-        links = []; //Les arcs
-        dataObj = {}; //Objet des tableaux noeuds/liens
-        d3.selectAll("svg > *").remove();
-        gLinks = svg.append("g");
-        gNodes = svg.append("g");
-        simulation = d3.forceSimulation()
-            .force("center", d3.forceCenter(width / 2, height / 2))
-            .force("collide", d3.forceCollide(2))
-            .force("charge", d3.forceManyBody().strength(-350)) //.strength(-500)
-            .force("link", d3.forceLink().id(function(d) {
-                return d.uri;
-            }).distance(function(d) {
-                //longueur du lien : plus important si lien créateur
-                return d.value === "Creator" ? 30 : 0.2;
-            }).strength(2));
+            //Réinitialisation contenu + variables + simulation.
+            $("#dOeuvres").html("");
+            $(".card").css('opacity', '0');
+            $("#rowErr").css("opacity", "0");
+            nodes = []; //Les noeuds
+            links = []; //Les arcs
+            dataObj = {}; //Objet des tableaux noeuds/liens
+            d3.selectAll("svg > *").remove();
+            gLinks = svg.append("g");
+            gNodes = svg.append("g");
+            simulation = d3.forceSimulation()
+                .force("center", d3.forceCenter(width / 2, height / 2))
+                .force("collide", d3.forceCollide(2))
+                .force("charge", d3.forceManyBody().strength(-350)) //.strength(-500)
+                .force("link", d3.forceLink().id(function(d) {
+                    return d.uri;
+                }).distance(function(d) {
+                    //longueur du lien : plus important si lien créateur
+                    return d.value === "Creator" ? 30 : 0.2;
+                }).strength(2));
 
-        //=> envoi de la requête initiale
-        var uri = $('#uri').val().trim();
-        sparqlData(uri);
+            //=> envoi de la requête initiale
+            var uri = $('#uri').val().trim();
+            sparqlData(uri);
+        } else { //Si le navigateur est incompatible         
+            $("#btn").before("<div id='rowErr' class='alert alert-danger col-6 top-marge' role='alert'>Votre navigateur est incompatible avec la méthode fetch, utiliser le navigateur Chrome ou Firefox...</div>");
+            $("#rowErr").css("opacity", "1");
+            $('#btn').attr("disabled", true);
+        }
     });
     $('#uri').keydown(function(e) { //Appuie sur entrée => click
         if (e.keyCode == 13) {
@@ -92,6 +101,22 @@ $(function() {
         var req = "SELECT DISTINCT ?oeuvre ?titre ?nom (GROUP_CONCAT(DISTINCT ?abstract; SEPARATOR=\", \") as ?resum) (SAMPLE(?depic) as ?fdepic) (SAMPLE(?wDepic) as ?wdepic) ?wikidata WHERE {<" + uri + "> foaf:focus ?person; skos:prefLabel ?nom; skos:exactMatch ?wikidata . ?oeuvre dcterms:creator ?person; rdfs:label ?titre . OPTIONAL { ?oeuvre foaf:depiction ?wDepic. } OPTIONAL { ?person frad:biographicalInformation ?abstract.} OPTIONAL { ?person foaf:depiction ?depic. } FILTER (regex(?wikidata, \"^http://wikidata.org/\", \"i\"))} ORDER BY RAND() LIMIT 100";
 
         //fetch databnf sparql  => ne fonctionne pas sous IE et Edge
+        //Sous ces navigateurs, il est possible d'utiliser un appel xhr "classique" comme suit (utilisation de jquery dans cet exemple) :
+        /*
+        $.ajax({
+            url: endpoint,
+            dataType: 'json',
+            data: {
+                queryLn: 'SPARQL',
+                query: prefixes + req,
+                limit: 'none',
+                infer: 'true',
+                Accept: 'application/sparql-results+json'
+            },
+            success: // Appel à une fonction de traitement des oeuvres,
+            error: displayError
+        });
+        */
         var url = new URL(endpoint),
             params = { queryLn: 'SPARQL', output: 'json', query: prefixes + req, limit: 'none', infer: 'true', Accept: 'application/sparql-results+json' };
         Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
