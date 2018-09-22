@@ -43,10 +43,11 @@ $(function() {
 
     //Initialisation à partir d'un URI auteur
     $('#btn').click(function() {
-        //La méthode fetch ne fonctionnant pas (encore) sous IE et Edge, check si chrome ou firefox sont utilisés...
+        //La méthode fetch ne fonctionnant pas (encore) sous IE et Edge, check si chrome, opera ou firefox sont utilisés...
         var isChrome = !!window.chrome && !!window.chrome.webstore;
         var isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
-        if (isChrome || isFirefox) { //...Si c'est le cas
+        var isOpera = navigator.userAgent.indexOf("Opera");
+        if (isChrome || isFirefox || isOpera) { //...Si c'est le cas
             //Désactivation bouton pour éviter double requêtage (réactivation dans la fonction renduGraph())
             $(this).attr("disabled", true);
 
