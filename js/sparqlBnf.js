@@ -102,24 +102,27 @@ $(function() {
         var req = "SELECT DISTINCT ?oeuvre ?titre ?nom (GROUP_CONCAT(DISTINCT ?abstract; SEPARATOR=\", \") as ?resum) (SAMPLE(?depic) as ?fdepic) (SAMPLE(?wDepic) as ?wdepic) ?wikidata WHERE {<" + uri + "> foaf:focus ?person; skos:prefLabel ?nom; skos:exactMatch ?wikidata . ?oeuvre dcterms:creator ?person; rdfs:label ?titre . OPTIONAL { ?oeuvre foaf:depiction ?wDepic. } OPTIONAL { ?person frad:biographicalInformation ?abstract.} OPTIONAL { ?person foaf:depiction ?depic. } FILTER (regex(?wikidata, \"^http://wikidata.org/\", \"i\"))} ORDER BY RAND() LIMIT 100";
 
         //fetch databnf sparql  => ne fonctionne pas sous IE et Edge
+
         //Sous ces navigateurs, il est possible d'utiliser un appel xhr "classique" comme suit (utilisation de jquery dans cet exemple) :
-        /*
-        $.ajax({
-            url: endpoint,
-            dataType: 'json',
-            data: {
-                queryLn: 'SPARQL',
-                query: prefixes + req,
-                limit: 'none',
-                infer: 'true',
-                Accept: 'application/sparql-results+json'
-            },
-            success: // Appel à une fonction de traitement des oeuvres,
-            error: displayError
-        });
-        */
+        // $.ajax({
+        //     url: endpoint,
+        //     dataType: 'json',
+        //     data: {
+        //         queryLn: 'SPARQL',
+        //         query: prefixes + req,
+        //         limit: 'none',
+        //         infer: 'true',
+        //         Accept: 'application/sparql-results+json'
+        //     },
+        //     success: function(rep) {
+        //         console.log(rep);
+        //         traitOeuvres(uri, rep);
+        //     },
+        //     error: console.log('erreur')
+        // });
+
         var url = new URL(endpoint),
-            params = { queryLn: 'SPARQL', output: 'json', query: prefixes + req, limit: 'none', infer: 'true', Accept: 'application/sparql-results+json' };
+            params = { queryLn: 'SPARQL', output: 'json', query: prefixes + req, limit: 'none', infer: 'true' }; //Accept: 'application/sparql-results+json'
         Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
         //Envoi de la requête (asynchrone avec promesse)
         fetch(url)
