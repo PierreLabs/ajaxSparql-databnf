@@ -19,6 +19,11 @@ body {
     color: #bbb;
 }
 
+#dOeuvres h2 {
+    color: #555;
+    text-align: center;
+}
+
 .top-marge {
     margin-top: 20px;
 }

@@ -134,6 +134,7 @@ $(function() {
     function traitOeuvres(uri, oeuvres) {
         if ((oeuvres.results.bindings.length)) { //S'il y a des résultats
             $("#rowErr").remove();
+            $("#dOeuvres").append("<h2>" + oeuvres.results.bindings.length + " oeuvres liées</h2><hr>");
             $.each(oeuvres.results.bindings, function(i, oeuvre) {
                 if (i === 0) { //i === 0 => auteur
                     //depiction auteur + abstract
