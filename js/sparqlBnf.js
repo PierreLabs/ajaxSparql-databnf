@@ -43,10 +43,13 @@ $(function() {
 
     //Initialisation à partir d'un URI auteur
     $('#btn').click(function() {
+        if (self.fetch) {
+            console.log("fetch");
+        }
         //La méthode fetch ne fonctionnant pas (encore) sous IE et Edge, check si chrome, opera ou firefox sont utilisés...
         var isChrome = !!window.chrome && !!window.chrome.webstore;
         var isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
-        var isOpera = navigator.userAgent.indexOf("Opera");
+        var isOpera = navigator.userAgent.indexOf("Opera") > -1;
         if (isChrome || isFirefox || isOpera) { //...Si c'est le cas
             //Désactivation bouton pour éviter double requêtage (réactivation dans la fonction renduGraph())
             $(this).attr("disabled", true);
@@ -76,7 +79,7 @@ $(function() {
             var uri = $('#uri').val().trim();
             sparqlData(uri);
         } else { //Si le navigateur est incompatible         
-            $("#btn").before("<div id='rowErr' class='alert alert-danger col-6 top-marge' role='alert'>Votre navigateur est incompatible avec la méthode fetch, utiliser le navigateur Chrome ou Firefox...</div>");
+            $("#btn").before("<div id='rowErr' class='alert alert-danger col-6 top-marge' role='alert'>Votre navigateur est incompatible avec l'API Fetch, utiliser le navigateur Chrome ou Firefox...</div>");
             $("#rowErr").css("opacity", "1");
             $('#btn').attr("disabled", true);
         }
