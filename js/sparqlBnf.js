@@ -43,11 +43,11 @@ $(function() {
 
     //Initialisation à partir d'un URI auteur
     $('#btn').click(function() {
-        if (self.fetch) {
-            console.log("fetch");
-        }
+        // if (self.fetch) { //Ne fonctionne pas
+        //     console.log("fetch");
+        // }
         //La méthode fetch ne fonctionnant pas (encore) sous IE et Edge, check si chrome, opera ou firefox sont utilisés...
-        var isChrome = !!window.chrome && !!window.chrome.webstore;
+        var isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor); //!!window.chrome && !!window.chrome.webstore;
         var isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
         var isOpera = navigator.userAgent.indexOf("Opera") > -1;
         if (isChrome || isFirefox || isOpera) { //...Si c'est le cas
