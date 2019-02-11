@@ -128,8 +128,8 @@ $(function() {
             params = { queryLn: 'SPARQL', output: 'json', query: prefixes + req, limit: 'none', infer: 'true' }; //Accept: 'application/sparql-results+json'
         Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
         //Envoi de la requête (asynchrone avec promesse) --> le passage de data.bnf.fr en couche sécurisée (ssl) retourne "net::ERR_CERT_AUTHORITY_INVALID" dans un environnement non sécurisé par un certificat (mixed content).
-        var enTete = new Headers({ "Access-Control-Allow-Origin": "*" });
-        fetch(url, { headers: enTete })
+        //var enTete = new Headers({ "Access-Control-Allow-Origin": "*" });
+        fetch(url) //, { headers: enTete }
             .then(reponse => reponse.json())
             .then(data => traitOeuvres(uri, data)) //gestion auteur + oeuvres
             .catch(err => console.log(err));
