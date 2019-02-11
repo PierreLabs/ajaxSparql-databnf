@@ -35,7 +35,7 @@ $(function() {
         nodes = [], //Les noeuds
         links = [], //Les arcs
         dataObj = {}, //Objet des tableaux noeuds/liens (graphe "théorique")                
-        endpoint = "http://data.bnf.fr/sparql"; //point de terminaison
+        endpoint = "https://data.bnf.fr/sparql"; //point de terminaison
 
 
     var tabcouleurs = ["#3366cc", "#dc3912", "#ff9900", "#109618", "#d58fd5", "#0099c6", "#dd4477", "#66aa00", "#b82e2e", "#316395", "#6873c6", "#22aa99", "#aaaa11", "#6633cc", "#e67300", "#8b0707", "#651067", "#329262", "#5574a6", "#3b3eac"];
@@ -47,7 +47,7 @@ $(function() {
             console.log("fetch");
         }
         //La méthode fetch ne fonctionnant pas (encore) sous IE et Edge, check si chrome, opera ou firefox sont utilisés...
-        var isChrome = !!window.chrome && !!window.chrome.webstore;
+        var isChrome = !!window.chrome && !!window.chrome.csi;
         var isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
         var isOpera = navigator.userAgent.indexOf("Opera") > -1;
         if (isChrome || isFirefox || isOpera) { //...Si c'est le cas
@@ -122,13 +122,14 @@ $(function() {
         //         traitOeuvres(uri, rep);
         //     },
         //     error: console.log('erreur')
-        // });
+        // });       
 
         var url = new URL(endpoint),
             params = { queryLn: 'SPARQL', output: 'json', query: prefixes + req, limit: 'none', infer: 'true' }; //Accept: 'application/sparql-results+json'
         Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
-        //Envoi de la requête (asynchrone avec promesse)
-        fetch(url)
+        //Envoi de la requête (asynchrone avec promesse) --> le passage de data.bnf.fr en couche sécurisée (ssl) retourne "net::ERR_CERT_AUTHORITY_INVALID" dans un environnement non sécurisé par un certificat (mixed content).
+        var enTete = new Headers({ "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With" });
+        fetch(url, { headers: enTete })
             .then(reponse => reponse.json())
             .then(data => traitOeuvres(uri, data)) //gestion auteur + oeuvres
             .catch(err => console.log(err));
