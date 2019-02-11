@@ -43,9 +43,9 @@ $(function() {
 
     //Initialisation à partir d'un URI auteur
     $('#btn').click(function() {
-        if (self.fetch) {
-            console.log("fetch");
-        }
+        // if (self.fetch) { //Ne fonctionne pas
+        //     console.log("fetch");
+        // }
         //La méthode fetch ne fonctionnant pas (encore) sous IE et Edge, check si chrome, opera ou firefox sont utilisés...
         var isChrome = !!window.chrome && !!window.chrome.csi;
         var isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
