@@ -140,9 +140,16 @@ $(function() {
             $("#rowErr").remove();
             $("#dOeuvres").append("<h2>" + oeuvres.results.bindings.length + " oeuvres liées</h2><hr>");
             $.each(oeuvres.results.bindings, function(i, oeuvre) {
+                //Les illustrations auteur & oeuvre
+                var auteurDepic = typeof oeuvre.fdepic !== "undefined" ? oeuvre.fdepic.value : "#";
+                var oeuvreDepic = typeof oeuvre.wdepic !== "undefined" ? oeuvre.wdepic.value : "img/oeuvre.png";
+                //Contrôle de l'intégrité de l'uri d'illustration... Manque parfois un slash pour séparer la partie url de l'uri
+                auteurDepic = auteurDepic.indexOf("frark") ? auteurDepic.replace("frark", "fr/ark") : auteurDepic;
+                oeuvreDepic = oeuvreDepic.indexOf("frark") ? oeuvreDepic.replace("frark", "fr/ark") : oeuvreDepic;
+
                 if (i === 0) { //i === 0 => auteur
-                    //depiction auteur + abstract
-                    $("#depic").attr('src', typeof oeuvre.fdepic !== "undefined" ? oeuvre.fdepic.value : "#");
+                    //"depiction" auteur + abstract
+                    $("#depic").attr('src', auteurDepic);
                     $(".card-title").html(oeuvre.nom.value);
                     if (oeuvre.resum) //biographicalInformation?
                         $(".card-text").html(oeuvre.resum.value);
@@ -152,10 +159,10 @@ $(function() {
                     $(".card").css('opacity', '1');
 
                     //nodes index 0 = auteur
-                    nodes.push({ titre: oeuvre.nom.value, depic: typeof oeuvre.fdepic !== "undefined" ? oeuvre.fdepic.value : "#", uri: uri, group: "auteur" });
-                    nodes.push({ titre: oeuvre.titre.value, depic: typeof oeuvre.wdepic !== "undefined" ? oeuvre.wdepic.value : "img/oeuvre.png", uri: oeuvre.oeuvre.value, dateEd: "", group: "oeuvre" });
+                    nodes.push({ titre: oeuvre.nom.value, depic: auteurDepic, uri: uri, group: "auteur" });
+                    nodes.push({ titre: oeuvre.titre.value, depic: oeuvreDepic, uri: oeuvre.oeuvre.value, dateEd: "", group: "oeuvre" });
                 } else { // Oeuvres
-                    nodes.push({ titre: oeuvre.titre.value, depic: typeof oeuvre.wdepic !== "undefined" ? oeuvre.wdepic.value : "img/oeuvre.png", uri: oeuvre.oeuvre.value, dateEd: "", group: "oeuvre" });
+                    nodes.push({ titre: oeuvre.titre.value, depic: oeuvreDepic, uri: oeuvre.oeuvre.value, dateEd: "", group: "oeuvre" });
                 }
                 links.push({ source: uri, target: oeuvre.oeuvre.value, value: "Creator" });
             });
