@@ -102,7 +102,8 @@ $(function() {
         //note: <http://rdvocab.info/ElementsGr2/> est obsolète (FRAD) mais toujours utilisé dans le modèle de données de data.bnf.fr
         var prefixes = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX foaf: <http://xmlns.com/foaf/0.1/> PREFIX dcterms: <http://purl.org/dc/terms/> PREFIX frad: <http://rdvocab.info/ElementsGr2/>";
         //Requête SPARQL
-        var req = "SELECT DISTINCT ?oeuvre ?titre ?nom (GROUP_CONCAT(DISTINCT ?abstract; SEPARATOR=\", \") as ?resum) (SAMPLE(?depic) as ?fdepic) (SAMPLE(?wDepic) as ?wdepic) ?dbpedia WHERE {<" + uri + "> foaf:focus ?person; skos:prefLabel ?nom; skos:exactMatch ?dbpedia . ?oeuvre dcterms:creator ?person; rdfs:label ?titre . OPTIONAL { ?oeuvre foaf:depiction ?wDepic. } OPTIONAL { ?person frad:biographicalInformation ?abstract.} OPTIONAL { ?person foaf:depiction ?depic. } FILTER (regex(?dbpedia, \"^http://fr.dbpedia.org\", \"i\"))} ORDER BY RAND() LIMIT 100";
+        // var req = "SELECT DISTINCT ?oeuvre ?titre ?nom (GROUP_CONCAT(DISTINCT ?abstract; SEPARATOR=\", \") as ?resum) (SAMPLE(?depic) as ?fdepic) (SAMPLE(?wDepic) as ?wdepic) ?dbpedia WHERE {<" + uri + "> foaf:focus ?person; skos:prefLabel ?nom; skos:exactMatch ?dbpedia . ?oeuvre dcterms:creator ?person; rdfs:label ?titre . OPTIONAL { ?oeuvre foaf:depiction ?wDepic. } OPTIONAL { ?person frad:biographicalInformation ?abstract.} OPTIONAL { ?person foaf:depiction ?depic. } FILTER (regex(?dbpedia, \"^http://fr.dbpedia.org\", \"i\"))} ORDER BY RAND() LIMIT 100";
+        var req = "SELECT DISTINCT ?oeuvre ?nom ?titre (SAMPLE(?depic) as ?fdepic) (SAMPLE(?wDepic) as ?wdepic) WHERE {<" + uri + "> foaf:focus ?person; skos:prefLabel ?nom . ?oeuvre dcterms:creator ?person; rdfs:label ?titre. OPTIONAL { ?oeuvre foaf:depiction ?wDepic. } OPTIONAL { ?person frad:biographicalInformation ?abstract.} OPTIONAL { ?person foaf:depiction ?depic. } OPTIONAL {<" + uri + "> skos:exactMatch ?dbpedia. FILTER (regex(?dbpedia, \"^http://fr.dbpedia.org\", \"i\"))}} ORDER BY RAND() LIMIT 100";
 
         //fetch databnf sparql  => ne fonctionne pas sous IE et Edge
 
@@ -125,7 +126,13 @@ $(function() {
         // });       
 
         var url = new URL(endpoint),
-            params = { queryLn: 'SPARQL', output: 'json', query: prefixes + req, limit: 'none', infer: 'true' }; //Accept: 'application/sparql-results+json'
+            params = {
+                queryLn: 'SPARQL',
+                output: 'json',
+                query: prefixes + req,
+                limit: 'none',
+                infer: 'true'
+            }; //Accept: 'application/sparql-results+json'
         Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
         //Envoi de la requête (asynchrone avec promesse) --> le passage de data.bnf.fr et du serveur virtuoso en couche sécurisée (ssl) retourne "net::ERR_CERT_AUTHORITY_INVALID" dans un environnement non sécurisé par un certificat (mixed content). => Semble corrigé (constaté le 14/02/2019)
         fetch(url)
@@ -158,12 +165,33 @@ $(function() {
                     $(".card").css('opacity', '1');
 
                     //nodes index 0 = auteur
-                    nodes.push({ titre: oeuvre.nom.value, depic: auteurDepic, uri: uri, group: "auteur" });
-                    nodes.push({ titre: oeuvre.titre.value, depic: oeuvreDepic, uri: oeuvre.oeuvre.value, dateEd: "", group: "oeuvre" });
+                    nodes.push({
+                        titre: oeuvre.nom.value,
+                        depic: auteurDepic,
+                        uri: uri,
+                        group: "auteur"
+                    });
+                    nodes.push({
+                        titre: oeuvre.titre.value,
+                        depic: oeuvreDepic,
+                        uri: oeuvre.oeuvre.value,
+                        dateEd: "",
+                        group: "oeuvre"
+                    });
                 } else { // Oeuvres
-                    nodes.push({ titre: oeuvre.titre.value, depic: oeuvreDepic, uri: oeuvre.oeuvre.value, dateEd: "", group: "oeuvre" });
+                    nodes.push({
+                        titre: oeuvre.titre.value,
+                        depic: oeuvreDepic,
+                        uri: oeuvre.oeuvre.value,
+                        dateEd: "",
+                        group: "oeuvre"
+                    });
                 }
-                links.push({ source: uri, target: oeuvre.oeuvre.value, value: "Creator" });
+                links.push({
+                    source: uri,
+                    target: oeuvre.oeuvre.value,
+                    value: "Creator"
+                });
             });
             // var newnodes = supprDoublons(nodes, "id"); //Tableau des noeuds uniques
             dataObj = {
@@ -183,14 +211,18 @@ $(function() {
             $(".card-oeuvre").wrapAll("<div class='card-columns d-inline-block'></div>").css("cursor", "pointer");
 
             //On accède à la ressource depuis l'oeuvre => pas de propagation des événements (dispatch click)
-            $(".res-oeuvre").click(function(e) { e.stopPropagation(); });
+            $(".res-oeuvre").click(function(e) {
+                e.stopPropagation();
+            });
 
             // Click sur "card" oeuvre => dispatch click sur node correspondant
             d3.select('body')
                 .selectAll('.card-oeuvre')
                 .on("click", function() {
                     var luri = this.dataset.uri;
-                    $('html, body').animate({ scrollTop: 0 }, 200);
+                    $('html, body').animate({
+                        scrollTop: 0
+                    }, 200);
                     var leNode = d3.selectAll('circle').filter(function(n) { //Le node correspondant à l'oeuvre
                         return n.uri === luri;
                     });
@@ -199,7 +231,9 @@ $(function() {
                         // dispatch ne rafraichit le graphe que partiellement lors des appels suivants
                         //Solution (provisoire ?) => relancer simulation
                         simulation.alphaTarget(0.05).restart();
-                        setTimeout(function() { simulation.alphaTarget(0); }, 1000);
+                        setTimeout(function() {
+                            simulation.alphaTarget(0);
+                        }, 1000);
                     });
                 });
 
@@ -219,7 +253,14 @@ $(function() {
 
         //fetch databnf sparql  => ne fonctionne pas sous IE et Edge
         var url = new URL(endpoint),
-            params = { queryLn: 'SPARQL', output: 'json', query: p + r, limit: 'none', infer: 'true', Accept: 'application/sparql-results+json' };
+            params = {
+                queryLn: 'SPARQL',
+                output: 'json',
+                query: p + r,
+                limit: 'none',
+                infer: 'true',
+                Accept: 'application/sparql-results+json'
+            };
         Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
         //Envoi de la requête (asynchrone avec promesse)
         fetch(url)
@@ -235,8 +276,22 @@ $(function() {
             $.each(data.results.bindings, function(i, manif) {
                 var isRepro = typeof manif.repro !== "undefined";
                 var lien = isRepro ? manif.repro.value : manif.manif.value;
-                nodes.push({ titre: manif.titre.value, pub: manif.pub.value, desc: manif.desc.value, note: manif.note.value, uri: lien, uriOeuvre: uri, isJeune: manif.isJeune, clicked: false, group: "manif" });
-                links.push({ source: typeof manif.repro === "undefined" ? manif.manif.value : manif.repro.value, target: uri, value: "workManifested" });
+                nodes.push({
+                    titre: manif.titre.value,
+                    pub: manif.pub.value,
+                    desc: manif.desc.value,
+                    note: manif.note.value,
+                    uri: lien,
+                    uriOeuvre: uri,
+                    isJeune: manif.isJeune,
+                    clicked: false,
+                    group: "manif"
+                });
+                links.push({
+                    source: typeof manif.repro === "undefined" ? manif.manif.value : manif.repro.value,
+                    target: uri,
+                    value: "workManifested"
+                });
                 var imgCard = isRepro ? lien + '.thumbnail' : !manif.isJeune ? 'img/manif.png' : 'img/manifJ.png';
                 var stringRepro = isRepro ? "<a href='" + manif.repro.value + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Accéder au document numérisé</a>" : "<a href='" + lien.replace("data.bnf.fr", "catalogue.bnf.fr") + "' target='_blank' class='btn btn-outline-light btn-sm' style='white-space: normal;'>Voir dans le catalogue</a>";
                 $("#manifsModalBody").append("<div class='card card-manif d-inline-block text-white' data-uri='" + lien + "' style='max-width:200px; background-color: " + coulOeuvreEnCours + "; margin:10px;'><img class='card-img-top img-rounded' src=" + imgCard + " onerror='this.src=\"img/manif.png\"' alt='illustration manifestation'><div class='card-body'><h6 class='card-title'>" + manif.titre.value + "</h6><p class='card-text'>" + manif.desc.value + " - " + manif.pub.value + "</p>" + stringRepro + "</div></div>");
@@ -278,7 +333,9 @@ $(function() {
             .data(dataObj.links);
         var linkEnter = link.enter().append("line")
             .attr("stroke-width", 1)
-            .attr("stroke", function(d) { return color(d.value); });
+            .attr("stroke", function(d) {
+                return color(d.value);
+            });
 
         link = linkEnter.merge(link);
 
@@ -288,7 +345,9 @@ $(function() {
             .selectAll("circle")
             .data(dataObj.nodes);
         var nodeEnter = node.enter().append("circle")
-            .attr("r", function(d) { return d.group == "auteur" ? 30 : d.group === "oeuvre" ? 12 : 8; })
+            .attr("r", function(d) {
+                return d.group == "auteur" ? 30 : d.group === "oeuvre" ? 12 : 8;
+            })
             .attr("fill", function(d) {
                 var coul = d.isJeune ? "#FDC745" : indexRequete === 1 && d.uri.indexOf('gallica') > -1 ? '#D2CFC8' : indexRequete === 0 ? color(d.titre) : "rgb(51, 102, 204)";
                 return coul; //colorManifs(d.titre);
