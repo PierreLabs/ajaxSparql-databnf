@@ -98,6 +98,9 @@ $(function() {
         //http://data.bnf.fr/ark:/12148/cb14793455w Giuliani
         //http://data.bnf.fr/ark:/12148/cb118900414 Balzac
 
+        //Les requêtes sur point de terminaison ne semblent pas accepter les uris avec un security layer (https)
+        uri = uri.indexOf("https") > -1 ? uri.replace("https", "http") : uri;
+
         //Préfixes
         //note: <http://rdvocab.info/ElementsGr2/> est obsolète (FRAD) mais toujours utilisé dans le modèle de données de data.bnf.fr
         var prefixes = "PREFIX skos: <http://www.w3.org/2004/02/skos/core#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX foaf: <http://xmlns.com/foaf/0.1/> PREFIX dcterms: <http://purl.org/dc/terms/> PREFIX frad: <http://rdvocab.info/ElementsGr2/>";
